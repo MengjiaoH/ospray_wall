@@ -74,6 +74,7 @@ namespace ospray{
   
                 serv_addr.sin_family = AF_INET;
                 serv_addr.sin_port = htons(portNum);
+                serv_addr.sin_addr.s_addr = inet_addr(hostName.c_str());
       
                 // Convert IPv4 and IPv6 addresses from text to binary form
                 if(inet_pton(AF_INET, hostName.c_str(), &serv_addr.sin_addr)<=0) 
