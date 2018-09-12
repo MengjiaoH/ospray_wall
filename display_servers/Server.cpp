@@ -275,29 +275,29 @@ namespace ospray{
                         // receive the data size of compressed tile
                         int numBytes = 0;
                         int dataSize = recv(sd, &numBytes, sizeof(int), 0 );
-                        std::cout << " Compressed tile would have " << numBytes << " bytes" << std::endl;
+                        //std::cout << " Compressed tile would have " << numBytes << " bytes" << std::endl;
                         encoded.numBytes = numBytes;
                         encoded.data = new unsigned char[encoded.numBytes];
                         //Check if it was for closing , and also read the
                         //incoming message
                         box2i region;
 
-                        std::lock_guard<std::mutex> lock(recvMutex);
+                        //std::lock_guard<std::mutex> lock(recvMutex);
                         valread = recv( sd , encoded.data, encoded.numBytes, MSG_WAITALL);
-                        std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;
+                        //std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;
                         region = encoded.getRegion();
 
                         const box2i affectedDisplays = wallConfig.affectedDisplays(region);
 
-                     printf("region %i %i - %i %i displays %i %i - %i %i\n",
-                            region.lower.x,
-                            region.lower.y,
-                            region.upper.x,
-                            region.upper.y,
-                            affectedDisplays.lower.x,
-                            affectedDisplays.lower.y,
-                            affectedDisplays.upper.x,
-                            affectedDisplays.upper.y);
+                    //  printf("region %i %i - %i %i displays %i %i - %i %i\n",
+                    //         region.lower.x,
+                    //         region.lower.y,
+                    //         region.upper.x,
+                    //         region.upper.y,
+                    //         affectedDisplays.lower.x,
+                    //         affectedDisplays.lower.y,
+                    //         affectedDisplays.upper.x,
+                    //         affectedDisplays.upper.y);
 
                     for (int dy=affectedDisplays.lower.y;dy<affectedDisplays.upper.y;dy++)
                         for (int dx=affectedDisplays.lower.x;dx<affectedDisplays.upper.x;dx++) {

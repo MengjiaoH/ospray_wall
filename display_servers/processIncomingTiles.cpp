@@ -178,8 +178,7 @@ namespace ospray {
                   numWrittenThisFrame += numWritten;
                   DW_DBG(printf("written %li / %li\n",numWrittenThisFrame,numExpectedThisFrame));
                   if (numWrittenThisFrame == numExpectedThisFrame) {
-                    printf("display %i/%i has a full frame!\n",
-                                  displayGroup.rank,displayGroup.size);
+                    //printf("display %i/%i has a full frame!\n",displayGroup.rank,displayGroup.size);
                    // need barrier here! if not, some images saved inside callback function are wrong. 
                     // displayGroup.barrier();
                     DW_DBG(printf("#osp:dw(%i/%i) barrier'ing on %i/%i\n",
