@@ -23,13 +23,13 @@ namespace ospray{
       
             serv_addr.sin_family = AF_INET;
             serv_addr.sin_port = htons(portNo);
-            serv_addr.sin_addr.s_addr = inet_addr(hostName.c_str());
+            //serv_addr.sin_addr.s_addr = inet_addr(hostName.c_str());
           
-            // Convert IPv4 and IPv6 addresses from text to binary form
-            // if(inet_pton(AF_INET, hostName.c_str(), &serv_addr.sin_addr)<=0) 
-            // {
-            //     printf("\nInvalid address/ Address not supported \n");
-            // }
+            //Convert IPv4 and IPv6 addresses from text to binary form
+            if(inet_pton(AF_INET, "155.98.19.60", &serv_addr.sin_addr)<=0) 
+            {
+                printf("\nInvalid address/ Address not supported \n");
+            }
       
             if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
             {
