@@ -25,7 +25,7 @@ SOFTWARE.
 //#include "MPI.h"
 #include "mpiCommon/MPICommon.h"
 #include "ospcommon/box.h"
-#include "zmq.hpp"
+
 namespace ospray {
   namespace dw {
 
