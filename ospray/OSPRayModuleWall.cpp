@@ -105,10 +105,6 @@ namespace ospray {
           PlainTile plainTile(vec2i(TILE_SIZE));
           plainTile.pitch = TILE_SIZE;
           for (int i=0;i<TILE_SIZE*TILE_SIZE;i++) {
-            //int r = std::min(255,int(255.f*tile.r[i]));
-            //int g = std::min(255,int(255.f*tile.g[i]));
-            //int b = std::min(255,int(255.f*tile.b[i]));
-            
             float gamma = 2.2;
             unsigned int r = clampColorComponent(simpleGammaCorrection(tile.r[i], gamma));
             unsigned int g = clampColorComponent(simpleGammaCorrection(tile.g[i], gamma));
@@ -118,21 +114,20 @@ namespace ospray {
             plainTile.pixel[i] = rgba;
           }
           plainTile.region = tile.region;
-          //std::cout << "tile region = " << tile.region.lower.x << " " << tile.region.lower.y << " " 
-                                        //<< tile.region.upper.x << " " << tile.region.upper.y << std::endl;
           bool stereo = client->getWallConfig()->doStereo();
-           {
-           //## Debug : write tiles to images
-             //std::cout << "write tiles to images before client write tiles" << std::endl;
-             //std::string filename = "before_client_write" + std::to_string(mpicommon::world.rank) + "_" +
+          {
+              //## Debug : write tiles to images
+              //std::cout << "write tiles to images before client write tiles" << std::endl;
+              //std::string filename = "before_client_write" + std::to_string(mpicommon::world.rank) + "_" +
                                                             //std::to_string(tile.region.lower.x) + "_" +
                                                             //std::to_string(tile.region.upper.x) + "_" +   
                                                             //std::to_string(tile.region.lower.y) + "_" +  
                                                             //std::to_string(tile.region.upper.y) + ".ppm";   
-             //vec2i img_size; img_size.x = TILE_SIZE; img_size.y = TILE_SIZE;
-             //writePPM(filename.c_str(), &img_size, plainTile.pixel);
-          // Correct!
-           }
+              //vec2i img_size; img_size.x = TILE_SIZE; img_size.y = TILE_SIZE;
+              //writePPM(filename.c_str(), &img_size, plainTile.pixel);
+              //Correct!
+          }
+          
           if (!stereo) {
             plainTile.eye = 0;
             client->writeTile(plainTile);
@@ -169,8 +164,7 @@ namespace ospray {
                 plainTile.pixel[i] = plainTile.pixel[i+shift];
               // push tile to outbox 
               client->writeTile(plainTile);
-            }
-              
+            }    
           }
         }
  
@@ -179,7 +173,7 @@ namespace ospray {
         virtual std::string toString() const;
 
         dw::Client *client;
-        std::thread sendThread;
+        //std::thread sendThread;
       };
       
       //! \brief common function to help printf-debugging 
@@ -191,14 +185,14 @@ namespace ospray {
       virtual void commit()
       {
         int portNum = getParam1i("portNum", 0);
-        int remote_mode = getParam1i("remote", 0);
+        //int remote_mode = getParam1i("remote", 0);
         std::string hostName = getParamString("hostName","");
         Ref<Data> wallInfoData = getParamData("wallInfo", nullptr);
         const WallInfo *wallInfo = (const WallInfo *)wallInfoData ->data;
         std::cout << "#osp:dw: trying to establish connection to display wall service at host " << hostName << " port " << portNum << std::endl;
         //PING;
         //PRINT(mpicommon::worker.size);
-        client = new dw::Client(hostName, portNum, mpicommon::worker, remote_mode, wallInfo);
+        client = new dw::Client(hostName, portNum, mpicommon::worker, wallInfo);
       }
 
       //! \brief create an instance of this pixel op

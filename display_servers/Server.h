@@ -27,10 +27,9 @@ namespace ospray {
                        void *objectForCallback,
                        const bool &hasHeadNode,
                        const int &ppn,
-                       const bool &use_tcp,
                        const int clientNum);
                 void setupCommunication(); 
-                void processIncomingTiles(mpicommon::Group &ourside, const bool &use_tcp);
+                void processIncomingTiles(mpicommon::Group &ourside);
                 void allocateFrameBuffers();
                 void runDispatcher(const mpicommon::Group &outsideClients,
                                    const mpicommon::Group &displayGroup,
@@ -38,7 +37,7 @@ namespace ospray {
                                    const bool &use_tcp);
             private:
                 const int portNum;
-                const bool use_tcp;
+                
                 int service_sock;
                 int valread;
                 int client_socket[30];
@@ -97,7 +96,6 @@ namespace ospray {
                                     void *objectForCallback,
                                     int portNum,
                                     int process_pernode,
-                                    bool use_tcp,
                                     int clientNum);
   }// ospray::dw
 }//ospray

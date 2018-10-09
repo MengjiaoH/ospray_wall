@@ -24,17 +24,16 @@ namespace ospray{
 
         class Client{
             public:
+            
                 Client(const std::string &hostName, 
                        const int &portNum,
                        const mpicommon::Group &me,
-                       const bool use_tcp,
                        const WallInfo *wallinfo);
+                
                 ~Client();
                 
-                std::atomic<bool> quit_state;
                 vec2i totalPixelsInWall() const;
                 const WallConfig *getWallConfig() const{ return wallConfig; }
-
                 void writeTile(const PlainTile &tile);
                 void sendTile();
                 void endFrame();
@@ -42,8 +41,8 @@ namespace ospray{
             private: 
                 // host name and port number connect to
                 std::string hostName;
-                int portNum;
                 int sock;
+                int portNum;
 
                 // MPI Group
                 mpicommon::Group me;
@@ -52,16 +51,10 @@ namespace ospray{
                 WallConfig *wallConfig;
                 WallInfo *wallInfo;
                 
-                // check for received 
-                bool hasMetaData;
-                bool use_tcp;
-                std::mutex sendMutex;
-                std::mutex state_mutex;
-
                 ospcommon::TransactionalBuffer<std::shared_ptr<Message>> outbox;
                 
                 void establishConnection();
-                void receiveWallConfig(const WallInfo *wallinfo );
+                void constructWallConfig(const WallInfo *wallinfo );
         };
     }
 }

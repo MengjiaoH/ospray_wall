@@ -53,9 +53,11 @@ namespace ospray{
                 }
                 else if(str == "-port"){
                     portNum = std::atoi(av[++i]);
-                }else if(str == "-remote"){
-                    remote_mode = std::atoi(av[++i]);
-                }else if(str == "-mode"){
+                }
+                // else if(str == "-remote"){
+                //     remote_mode = std::atoi(av[++i]);
+                // }
+                else if(str == "-mode"){
                     mode = std::atoi(av[++i]);
                 }
                 //}else{
@@ -76,40 +78,15 @@ namespace ospray{
             vec2i canvas;
             int stereo;
             std::string mpiPortName; 
-            // Service serviceInfo
-            // if(remote_mode){
-            //     // Use TCP/IP
-            //     //ServiceInfo_Req serviceInfo(hostName, portNum);
-            //     //serviceInfo.getServiceInfo();
-            //     int infoPortNum = 8443;
-            //     ServiceInfo serviceInfo;
-            //     serviceInfo.getFrom(hostName, infoPortNum);
-            //     mpiPortName = serviceInfo.mpiPortName;
-            //     canvas = serviceInfo.totalPixelsInWall;
-            //     stereo = serviceInfo.stereo;
-                
-            //     std::cout << "=============== DEBUG ==============" << std::endl;
-            //     std::cout << "mpiPortName " << mpiPortName << std::endl;
-            //     std::cout << "total pixels in the wall = " << canvas.x << " x " 
-            //                                            << canvas.y << std::endl;
-            //     std::cout << "stereo = " << stereo << std::endl;
-            //     std::cout << "====================================" << std::endl;
-            // }else{
-                ServiceInfo serviceInfo;
-                WallInfo wallInfo;
-                int infoPortNum = 8443;
-                serviceInfo.getFrom(hostName,infoPortNum);
-                wallInfo = *serviceInfo.wallInfo;
-                mpiPortName = serviceInfo.mpiPortName;
-                stereo = wallInfo.stereo;
-                canvas = wallInfo.totalPixelsInWall;
-                // MPI_CALL(Bcast(&wallInfo, sizeof(WallInfo), MPI_BYTE, 0, MPI_WORLD_COMM));
-            // }
 
-            // camera
-            //float cam_pos[] = {0.f, 0.f, 0.f};
-            //float cam_up [] = {0.f, 1.f, 0.f};
-            //float cam_view [] = {0.1f, 0.f, 1.f};
+            ServiceInfo serviceInfo;
+            WallInfo wallInfo;
+            int infoPortNum = 8443;
+            serviceInfo.getFrom(hostName,infoPortNum);
+            wallInfo = *serviceInfo.wallInfo;
+            mpiPortName = serviceInfo.mpiPortName;
+            stereo = wallInfo.stereo;
+            canvas = wallInfo.totalPixelsInWall;
 
               // triangle mesh data
               float vertex[] = { -1.0f, -1.0f, 3.0f, 0.f,
@@ -133,30 +110,13 @@ namespace ospray{
             //canvas.x = 1024; canvas.y = 768;
             if (mode == 0){
                 // spheres
-                                // construct particles
+                // construct particles
                 std::vector<Particle> random_atoms;
                 std::vector<float> random_colors;
                 constructParticles(random_atoms, random_colors, box);
                 
                 //new spheres geometry
                 geom = commitParticles(random_atoms, random_colors);  // create and setup model and mesh
-                //OSPGeometry mesh = ospNewGeometry("triangles");
-                //OSPData data = ospNewData(4, OSP_FLOAT3A, vertex, 0); // OSP_FLOAT3 format is also supported for vertex positions
-                //ospCommit(data);
-                //ospSetData(mesh, "vertex", data);
-                //ospRelease(data); // we are done using this handle
-
-                //data = ospNewData(4, OSP_FLOAT4, color, 0);
-                //ospCommit(data);
-                //ospSetData(mesh, "vertex.color", data);
-                //ospRelease(data); // we are done using this handle
-
-                //data = ospNewData(2, OSP_INT3, index, 0); // OSP_INT4 format is also supported for triangle indices
-                //ospCommit(data);
-                //ospSetData(mesh, "index", data);
-                //ospRelease(data); // we are done using this handle
-
-                //ospCommit(mesh);
             }else{
                 // Lines
                 std::cout << "start parsing data " << std::endl; 
@@ -168,7 +128,6 @@ namespace ospray{
             // create and setup model and mesh
             OSPModel model = ospNewModel();
             ospAddGeometry(model, geom);
-            //ospAddGeometry(model, mesh);
             ospCommit(model);  
 
             OSPCamera camera = ospNewCamera("perspective");
@@ -177,11 +136,10 @@ namespace ospray{
             ospSet3fv(camera, "up", cam_up);
             ospSet3fv(camera, "dir", cam_view);
             ospCommit(camera);
-         
 
             // For distributed rendering we must use the MPI raycaster
             OSPRenderer renderer = ospNewRenderer("scivis");
-            
+
             OSPLight ambient_light = ospNewLight(renderer, "AmbientLight");
             ospSet1f(ambient_light, "intensity", 0.35f);
             ospSetVec3f(ambient_light, "color", osp::vec3f{174.f / 255.0f, 218.0f / 255.f, 1.0f});
@@ -224,7 +182,7 @@ namespace ospray{
 
             // Create pixelOP
             OSPPixelOp pixelOp = ospNewPixelOp("wall");
-            ospSet1i(pixelOp, "remote", remote_mode);
+            // ospSet1i(pixelOp, "remote", remote_mode);
             ospSetString(pixelOp, "hostName", mpiPortName.c_str());
             ospSet1i(pixelOp, "portNum", portNum);
             OSPData wallInfoData = ospNewData(sizeof(WallInfo), OSP_RAW, &wallInfo, OSP_DATA_SHARED_BUFFER);
@@ -244,7 +202,7 @@ namespace ospray{
                 ospRenderFrame(pixelOP_framebuffer, renderer, OSP_FB_COLOR);
                 // ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR);
                 double thisTime = getSysTime();
-                //std::cout << "Frame Rate  = " << 1.f / (thisTime - lastTime) << std::endl;
+                std::cout << "Frame Rate  = " << 1.f / (thisTime - lastTime) << std::endl;
                  //double thisTime = getSysTime();
                  //std::cout << "offload frame rate = " << 1.f / (thisTime - lastTime) << std::endl;
                 cam_pos[1] += 1.0;
