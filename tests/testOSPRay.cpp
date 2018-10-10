@@ -202,14 +202,14 @@ namespace ospray{
                 ospRenderFrame(pixelOP_framebuffer, renderer, OSP_FB_COLOR);
                 // ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR);
                 double thisTime = getSysTime();
-                std::cout << "Frame Rate  = " << 1.f / (thisTime - lastTime) << std::endl;
+                // std::cout << "Frame Rate  = " << 1.f / (thisTime - lastTime) << std::endl;
                  //double thisTime = getSysTime();
                  //std::cout << "offload frame rate = " << 1.f / (thisTime - lastTime) << std::endl;
-                // cam_pos[1] += 1.0;
-                // cam_view[1] = cam_target[1] - cam_pos[1];
-                // ospSet3fv(camera, "pos", cam_pos);
-                // ospSet3fv(camera, "dir", cam_view);
-                // ospCommit(camera); 
+                cam_pos[1] += 1.0;
+                cam_view[1] = cam_target[1] - cam_pos[1];
+                ospSet3fv(camera, "pos", cam_pos);
+                ospSet3fv(camera, "dir", cam_view);
+                ospCommit(camera); 
             }    
 
             // if(mpicommon::world.rank == 0){

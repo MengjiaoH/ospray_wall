@@ -177,17 +177,19 @@ namespace ospray{
                             // std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;
                             region = encoded.getRegion();
 
+                            compressions.emplace_back( 100.0 * static_cast<float>(numBytes) / (tileSize * tileSize));
+
                             const box2i affectedDisplays = wallConfig.affectedDisplays(region);
 
-                            printf("region %i %i - %i %i displays %i %i - %i %i\n",
-                                    region.lower.x,
-                                    region.lower.y,
-                                    region.upper.x,
-                                    region.upper.y,
-                                    affectedDisplays.lower.x,
-                                    affectedDisplays.lower.y,
-                                    affectedDisplays.upper.x,
-                                    affectedDisplays.upper.y);
+                            // printf("region %i %i - %i %i displays %i %i - %i %i\n",
+                            //         region.lower.x,
+                            //         region.lower.y,
+                            //         region.upper.x,
+                            //         region.upper.y,
+                            //         affectedDisplays.lower.x,
+                            //         affectedDisplays.lower.y,
+                            //         affectedDisplays.upper.x,
+                            //         affectedDisplays.upper.y);
 
                             for (int dy=affectedDisplays.lower.y;dy<affectedDisplays.upper.y;dy++)
                                 for (int dx=affectedDisplays.lower.x;dx<affectedDisplays.upper.x;dx++) {
@@ -197,15 +199,16 @@ namespace ospray{
 
                             numWrittenThisFrame += region.size().product();
                             numBytesAfterCompression += encoded.numBytes;
-                            printf("dispatch %i/%i\n",numWrittenThisFrame,numExpectedThisFrame);
+                            
+                            // printf("dispatch %i/%i\n",numWrittenThisFrame,numExpectedThisFrame);
 
                             if (numWrittenThisFrame == numExpectedThisFrame) {
-                                printf("Num bytes after compression = %d\n", numBytesAfterCompression); 
-                                printf("#osp:dw(hn): head node has a full frame\n");
+                                // printf("Compression ratio = %d\n", numBytesAfterCompression ); 
+                                // printf("#osp:dw(hn): head node has a full frame\n");
                                 numWrittenThisFrame = 0;
                                 numBytesAfterCompression = 0;
-                                outwardFacingGroup.barrier();
                                 dispatchGroup.barrier();
+                                // endFramePrint();
                             }
 
                             if (valread == 0){
@@ -215,6 +218,7 @@ namespace ospray{
                                 //Close the socket and mark as 0 in list for reuse
                                 close( sd );
                                 client_socket[i] = 0;
+                                endFramePrint();
                             }
                     }
                 }
@@ -253,6 +257,13 @@ namespace ospray{
                                     int clientNum){
             assert(Server::singleton == NULL);
             Server::singleton = new Server(portNum, world, displayGroup, dispatchGroup, wallConfig, displayCallback, objectForCallback, hasHeadNode, process_pernode, clientNum);
+        }
+
+        void Server::endFramePrint()
+        {
+            compressionStats stats(compressions);
+            stats.time_suffix = "%";
+            std::cout << "Compression ratio statistics: \n" << stats << "\n";
         }
  
 

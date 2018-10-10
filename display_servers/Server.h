@@ -2,6 +2,7 @@
 
 #include "mpiCommon/MPICommon.h"
 #include "ospcommon/networking/Socket.h"
+#include "bench/pico_bench/pico_bench.h"
 #include "../common/WallConfig.h"
 #include "../common/CompressedTile.h"
 #include <thread>
@@ -67,7 +68,6 @@ namespace ospray {
                 const DisplayCallback displayCallback;
                 void *const objectForCallback;
 
-                size_t numBytesAfterCompression = 0;
                 /*! total number of pixels already written this frame */
                 size_t numWrittenThisFrame;
                 /*! total number of pixels we have to write this frame until we
@@ -78,14 +78,20 @@ namespace ospray {
                 uint32_t *recv_l, *recv_r, *disp_l, *disp_r;
                 /*! @} */
 
+                // Measurement 
+                size_t tileSize = 256;
+                size_t numBytesAfterCompression = 0;
+                using compressionPercent = std::chrono::duration<double>;
+                std::vector<compressionPercent> compressions;
+                using compressionStats = pico_bench::Statistics<compressionPercent>;
+
                 mpicommon::Group waitForConnection(const mpicommon::Group &outFacingGroup,
                                        const int &portNum);        
-                //void openInfoPort(const std::string &mpiPortName,
-                                  //const WallConfig &wallConfig,
-                                  //const int &PortNum);
+
                 void sendConfigToClient(const mpicommon::Group &outside, 
                                         const mpicommon::Group &me,
                                         const WallConfig &wallConfig);
+                void endFramePrint();
 
         };
         void startWallServer(const mpicommon::Group world,
@@ -98,5 +104,6 @@ namespace ospray {
                                     int portNum,
                                     int process_pernode,
                                     int clientNum);
+
   }// ospray::dw
 }//ospray
