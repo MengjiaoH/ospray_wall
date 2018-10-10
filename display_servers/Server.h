@@ -67,6 +67,7 @@ namespace ospray {
                 const DisplayCallback displayCallback;
                 void *const objectForCallback;
 
+                size_t numBytesAfterCompression = 0;
                 /*! total number of pixels already written this frame */
                 size_t numWrittenThisFrame;
                 /*! total number of pixels we have to write this frame until we

@@ -21,7 +21,7 @@ namespace ospray{
              dispatchGroup(dispatchGroup), wallConfig(wallConfig),
              displayCallback(displayCallback), objectForCallback(objectForCallback),
              hasHeadNode(hasHeadNode), ppn(ppn), 
-             numWrittenThisFrame(0), numExpectedThisFrame(wallConfig.displayPixelCount()),
+             numWrittenThisFrame(0), numExpectedThisFrame(wallConfig.totalPixels().product()),
              recv_l(NULL), recv_r(NULL), disp_l(NULL), disp_r(NULL), clientNum(clientNum)
         {
             commThread = std::thread([&](){
@@ -167,14 +167,14 @@ namespace ospray{
                             // receive the data size of compressed tile
                             int numBytes = 0;
                             int dataSize = recv(sd, &numBytes, sizeof(int), 0 );
-                            std::cout << " Compressed tile would have " << numBytes << " bytes" << std::endl;
+                            // std::cout << " Compressed tile would have " << numBytes << " bytes" << std::endl;
                             encoded.numBytes = numBytes;
                             encoded.data = new unsigned char[encoded.numBytes];
                             box2i region;
 
                             std::lock_guard<std::mutex> lock(recvMutex);
                             valread = recv( sd , encoded.data, encoded.numBytes, MSG_WAITALL);
-                            std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;
+                            // std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;
                             region = encoded.getRegion();
 
                             const box2i affectedDisplays = wallConfig.affectedDisplays(region);
@@ -196,13 +196,16 @@ namespace ospray{
                             }
 
                             numWrittenThisFrame += region.size().product();
-
-                            //printf("dispatch %i/%i\n",numWrittenThisFrame,numExpectedThisFrame);
+                            numBytesAfterCompression += encoded.numBytes;
+                            printf("dispatch %i/%i\n",numWrittenThisFrame,numExpectedThisFrame);
 
                             if (numWrittenThisFrame == numExpectedThisFrame) {
-                                // printf("#osp:dw(hn): head node has a full frame\n");
-                                dispatchGroup.barrier();
+                                printf("Num bytes after compression = %d\n", numBytesAfterCompression); 
+                                printf("#osp:dw(hn): head node has a full frame\n");
                                 numWrittenThisFrame = 0;
+                                numBytesAfterCompression = 0;
+                                outwardFacingGroup.barrier();
+                                dispatchGroup.barrier();
                             }
 
                             if (valread == 0){

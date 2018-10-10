@@ -43,6 +43,7 @@ namespace ospray{
                 std::string hostName;
                 int sock;
                 int portNum;
+                std::mutex sendMutex;
 
                 // MPI Group
                 mpicommon::Group me;

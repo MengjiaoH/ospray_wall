@@ -108,14 +108,14 @@ namespace ospray{
 
             // send mpi port name
             int str_length = hostName.length();
-            std::cout << "string length = " << str_length << std::endl;
+            // std::cout << "string length = " << str_length << std::endl;
             send(new_socket, &str_length, 4, 0);
             send(new_socket, hostName.data(), str_length, 0);
             // Send wall Info
             send(new_socket, &wallInfo, sizeof(WallInfo), 0);
             // Read the number of clients will connect 
             valread = recv(new_socket, &clientNum, 4, 0);
-            std::cout << " DEBUG: clientNum = " << clientNum << std::endl;
+            // std::cout << " DEBUG: clientNum = " << clientNum << std::endl;
         }// ! End of sendTo
 }// end of ospray::dw
 }// end of ospray

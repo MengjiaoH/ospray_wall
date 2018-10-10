@@ -113,6 +113,7 @@ namespace ospray{
             // !! Send tile
             //! Send how large the compressed data
             // TODO: Measure sending time
+            std::lock_guard<std::mutex> lock(sendMutex);
             int compressedData = send(sock, &encoded.numBytes, sizeof(int), MSG_MORE);
             //std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << compressedData << std::endl;
             //! Send compressed tile
