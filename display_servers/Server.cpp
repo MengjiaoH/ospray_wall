@@ -1,6 +1,7 @@
 #include "Server.h"
 #include <pthread.h>
 #include <atomic>
+#include <chrono>
 
 namespace ospray{
     namespace dw{
@@ -166,19 +167,20 @@ namespace ospray{
                             CompressedTile encoded;
                             // receive the data size of compressed tile
                             int numBytes = 0;
+                            auto start = std::chrono::high_resolution_clock::now();
                             int dataSize = recv(sd, &numBytes, sizeof(int), 0 );
                             // std::cout << " Compressed tile would have " << numBytes << " bytes" << std::endl;
                             encoded.numBytes = numBytes;
                             encoded.data = new unsigned char[encoded.numBytes];
                             box2i region;
-
                             std::lock_guard<std::mutex> lock(recvMutex);
                             valread = recv( sd , encoded.data, encoded.numBytes, MSG_WAITALL);
+                            auto end = std::chrono::high_resolution_clock::now();
                             // std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;
                             region = encoded.getRegion();
-
+                            recvtimes.push_back(std::chrono::duration_cast<realTime>(end - start));
                             compressions.emplace_back( 100.0 * static_cast<float>(numBytes) / (tileSize * tileSize));
-
+                            
                             const box2i affectedDisplays = wallConfig.affectedDisplays(region);
 
                             // printf("region %i %i - %i %i displays %i %i - %i %i\n",
@@ -207,6 +209,12 @@ namespace ospray{
                                 // printf("#osp:dw(hn): head node has a full frame\n");
                                 numWrittenThisFrame = 0;
                                 numBytesAfterCompression = 0;
+                                realTime sum_recv;
+                                for(size_t i = 0; i < recvtimes.size(); i++){
+                                    sum_recv += recvtimes[i];
+                                }
+                                recvTime.push_back(std::chrono::duration_cast<realTime>(sum_recv));
+                                recvtimes.clear();
                                 dispatchGroup.barrier();
                                 // endFramePrint();
                             }
@@ -219,6 +227,7 @@ namespace ospray{
                                 close( sd );
                                 client_socket[i] = 0;
                                 endFramePrint();
+                                
                             }
                     }
                 }
@@ -264,6 +273,13 @@ namespace ospray{
             compressionStats stats(compressions);
             stats.time_suffix = "%";
             std::cout << "Compression ratio statistics: \n" << stats << "\n";
+
+            if(!recvTime.empty()){
+                Stats recvStats(recvTime);
+                recvStats.time_suffix = "ms";
+                std::cout  << "Message recv statistics:\n" << recvStats << "\n";
+            }
+
         }
  
 

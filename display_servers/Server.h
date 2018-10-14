@@ -9,6 +9,7 @@
 #include <vector>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <chrono>
 
 namespace ospray {
   namespace dw {
@@ -81,10 +82,16 @@ namespace ospray {
                 // Measurement 
                 size_t tileSize = 256;
                 size_t numBytesAfterCompression = 0;
-                using compressionPercent = std::chrono::duration<double>;
+                // compression ratio
+                using compressionPercent = std::chrono::duration<float>;
                 std::vector<compressionPercent> compressions;
-                using compressionStats = pico_bench::Statistics<compressionPercent>;
+                // Compression time
+                using realTime = std::chrono::duration<double, std::milli>;
+                 std::vector<realTime> recvtimes;
+                std::vector<realTime> decompressionTime, recvTime, sendTime;
 
+                using compressionStats = pico_bench::Statistics<compressionPercent>;
+                using Stats = pico_bench::Statistics<realTime>;
                 mpicommon::Group waitForConnection(const mpicommon::Group &outFacingGroup,
                                        const int &portNum);        
 
