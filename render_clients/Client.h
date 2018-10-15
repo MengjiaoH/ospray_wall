@@ -15,6 +15,7 @@
 #include "mpiCommon/MPICommon.h"
 #include "ospcommon/containers/TransactionalBuffer.h"
 #include "ospcommon/networking/Socket.h"
+#include "bench/pico_bench/pico_bench.h"
 
 namespace ospray{
     namespace dw{
@@ -37,6 +38,7 @@ namespace ospray{
                 void writeTile(const PlainTile &tile);
                 void sendTile();
                 void endFrame();
+                void printStatistics();
                             
             private: 
                 // host name and port number connect to
@@ -51,9 +53,18 @@ namespace ospray{
                 // wall config
                 WallConfig *wallConfig;
                 WallInfo *wallInfo;
-                
+ 
+                size_t numWrittenThisFrame = 0;
+                size_t numExpectedThisFrame;          
                 ospcommon::TransactionalBuffer<std::shared_ptr<Message>> outbox;
+ 
+                // Measurement
                 
+                using realTime = std::chrono::duration<double, std::milli>;
+                std::vector<realTime> sendtimes, compressiontimes;
+                std::vector<realTime> sendTime, compressionTime;
+                using Stats = pico_bench::Statistics<realTime>;
+
                 void establishConnection();
                 void constructWallConfig(const WallInfo *wallinfo );
         };

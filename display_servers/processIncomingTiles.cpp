@@ -49,7 +49,10 @@ namespace ospray {
                       
                   const CompressedTileHeader *header = (const CompressedTileHeader *)encoded.data;
                   PlainTile plain(encoded.getRegion().size());
+                  auto start = std::chrono::high_resolution_clock::now();
                   encoded.decode(decompressor,plain);
+                  auto end = std::chrono::high_resolution_clock::now();
+                  decompressiontimes.push_back(std::chrono::duration_cast<realTime>(end - start));
                   //static std::atomic<int> tileID;
                   //int myTileID = tileID++;
                   //std::cout << "tile ID = " << tileId << std::endl;
@@ -86,8 +89,19 @@ namespace ospray {
                   DW_DBG(printf("written %li / %li\n",numWrittenThisFrame,numExpectedThisFrame));
                   if (numWrittenThisFrame == numExpectedThisFrame) {
                     // printf("display %i/%i has a full frame!\n", displayGroup.rank,displayGroup.size);
-                    //need barrier here! if not, some images saved inside callback function are wrong. 
+                    //need barrier here! if not, some images saved inside callback function are wrong.
                     displayGroup.barrier();
+                    realTime sumTime;
+                    for(size_t i = 0; i < decompressiontimes.size(); i++){
+                      sumTime += decompressiontimes[i];
+                    }
+                    decompressionTime.push_back(std::chrono::duration_cast<realTime>(sumTime));
+                    decompressiontimes.clear();
+                    if(!decompressionTime.empty()){
+                        Stats decompressionStats(decompressionTime);
+                        decompressionStats.time_suffix = "ms";
+                        std::cout  << "Decompression time statistics:\n" << decompressionStats << "\n";
+                    }
                     DW_DBG(printf("#osp:dw(%i/%i) barrier'ing on %i/%i\n",
                                   displayGroup.rank,displayGroup.size,
                                   outside.rank,outside.size));

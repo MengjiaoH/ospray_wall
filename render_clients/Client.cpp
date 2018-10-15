@@ -19,7 +19,8 @@ namespace ospray{
 
             //! Construct wall configurations
             constructWallConfig(wallinfo);
-            assert(wallConfig);
+            assert(wallConfig); 
+            numExpectedThisFrame = wallConfig ->totalPixels().product();    
             if(me.rank == 0){
                 wallConfig -> print();
             }
@@ -89,8 +90,26 @@ namespace ospray{
             return wallConfig->totalPixels();
         }
 
+        void Client::printStatistics(){
+            // Print Statistics Here
+            if(!sendTime.empty()){
+                Stats sendStats(sendTime);
+                sendStats.time_suffix = "ms";
+                std::cout  << "Message send statistics:\n" << sendStats << "\n";
+            }
+            if(!compressionTime.empty()){
+                Stats compressionStats(compressionTime);
+                compressionStats.time_suffix = "ms";
+                std::cout  << "Compression time statistics:\n" << compressionStats << "\n";
+            }
+        }
+
         void Client::endFrame()
         {
+            if(me.rank == 0){
+                printStatistics();
+            }
+
             MPI_CALL(Barrier(me.comm));
         }
 
@@ -103,7 +122,10 @@ namespace ospray{
             CompressedTile encoded;
             if (!g_compressor) g_compressor = CompressedTile::createCompressor();
             void *compressor = g_compressor;
+            auto start0 = std::chrono::high_resolution_clock::now();
             encoded.encode(compressor,tile);
+            auto end0 = std::chrono::high_resolution_clock::now();
+            compressiontimes.push_back(std::chrono::duration_cast<realTime>(end0 - start0));
 
             static std::atomic<int> ID;
             int myTileID = ID++;
@@ -113,11 +135,34 @@ namespace ospray{
             // !! Send tile
             //! Send how large the compressed data
             // TODO: Measure sending time
+            auto start = std::chrono::high_resolution_clock::now();
             std::lock_guard<std::mutex> lock(sendMutex);
             int compressedData = send(sock, &encoded.numBytes, sizeof(int), MSG_MORE);
             //std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << compressedData << std::endl;
             //! Send compressed tile
             int out = send(sock, encoded.data, encoded.numBytes, 0);
+
+            auto end = std::chrono::high_resolution_clock::now();
+            sendtimes.push_back(std::chrono::duration_cast<realTime>(end - start));
+            box2i region = encoded.getRegion();
+            const box2i affectedDisplays = wallConfig ->affectedDisplays(region);
+            numWrittenThisFrame += region.size().product();
+            if(numWrittenThisFrame == numExpectedThisFrame){
+                numWrittenThisFrame = 0;
+                realTime sum_send, sum_compression;
+                for(size_t i = 0; i < sendtimes.size(); i++){
+                    sum_send += sendtimes[i];
+                }
+                sendTime.push_back(std::chrono::duration_cast<realTime>(sum_send));
+
+                for(size_t i = 0; i < compressiontimes.size(); i++){
+                      sum_compression += compressiontimes[i];
+                    }
+                compressionTime.push_back(std::chrono::duration_cast<realTime>(sum_compression));
+
+                compressiontimes.clear();
+                sendtimes.clear();
+            }
             //std::cout << " Send tile ID = " << myTileID << " contains " << encoded.numBytes << " bytes and send " << out << " bytes" << std::endl;
 
             // ## Debug 

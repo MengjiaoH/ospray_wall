@@ -5,6 +5,7 @@
 // std
 #include <vector>
 #include <random>
+#include <chrono>
 
 #include "mpi.h"
 #include "mpiCommon/MPICommon.h"
@@ -194,14 +195,18 @@ namespace ospray{
             ospSetPixelOp(pixelOP_framebuffer, pixelOp);
 
             int frameID = 0;
+            using Time = std::chrono::duration<double, std::milli>;
+            std::vector<Time> renderTime;
+            using Stats = pico_bench::Statistics<Time>;
 
              //Render
             while(1){
                 frameID++;
-                double lastTime = getSysTime();
-                ospRenderFrame(pixelOP_framebuffer, renderer, OSP_FB_COLOR);
-                // ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR);
-                double thisTime = getSysTime();
+               auto lastTime = std::chrono::high_resolution_clock::now();
+               ospRenderFrame(pixelOP_framebuffer, renderer, OSP_FB_COLOR);
+               // ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR);
+               auto thisTime = std::chrono::high_resolution_clock::now();
+               renderTime.push_back(std::chrono::duration_cast<Time>(thisTime - lastTime));
                 // std::cout << "Frame Rate  = " << 1.f / (thisTime - lastTime) << std::endl;
                  //double thisTime = getSysTime();
                  //std::cout << "offload frame rate = " << 1.f / (thisTime - lastTime) << std::endl;
@@ -209,8 +214,16 @@ namespace ospray{
                 cam_view[1] = cam_target[1] - cam_pos[1];
                 ospSet3fv(camera, "pos", cam_pos);
                 ospSet3fv(camera, "dir", cam_view);
-                ospCommit(camera); 
-            }    
+                ospCommit(camera);
+            }
+
+            if(!renderTime.empty()){
+                Stats renderStats(renderTime);
+                renderStats.time_suffix = "ms";
+                std::cout  << "Decompression time statistics:\n" << renderStats << "\n";
+            }
+
+
 
             // if(mpicommon::world.rank == 0){
             //     uint32_t* fb = (uint32_t*)ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);

@@ -7,6 +7,7 @@
 #include <ospray/ospray_cpp/Geometry.h>
 #include <ospray/ospray_cpp/Data.h>
 #include <ospcommon/vec.h>
+#include "bench/pico_bench/pico_bench.h"
 
 struct Particle {
 	osp::vec3f pos;
