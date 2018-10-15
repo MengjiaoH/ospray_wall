@@ -2,12 +2,14 @@
 
 #include "mpiCommon/MPICommon.h"
 #include "ospcommon/networking/Socket.h"
+#include "bench/pico_bench/pico_bench.h"
 #include "../common/WallConfig.h"
 #include "../common/CompressedTile.h"
 #include <thread>
 #include <vector>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <chrono>
 
 namespace ospray {
   namespace dw {
@@ -27,10 +29,9 @@ namespace ospray {
                        void *objectForCallback,
                        const bool &hasHeadNode,
                        const int &ppn,
-                       const bool &use_tcp,
                        const int clientNum);
                 void setupCommunication(); 
-                void processIncomingTiles(mpicommon::Group &ourside, const bool &use_tcp);
+                void processIncomingTiles(mpicommon::Group &ourside);
                 void allocateFrameBuffers();
                 void runDispatcher(const mpicommon::Group &outsideClients,
                                    const mpicommon::Group &displayGroup,
@@ -38,7 +39,7 @@ namespace ospray {
                                    const bool &use_tcp);
             private:
                 const int portNum;
-                const bool use_tcp;
+                
                 int service_sock;
                 int valread;
                 int client_socket[30];
@@ -78,14 +79,27 @@ namespace ospray {
                 uint32_t *recv_l, *recv_r, *disp_l, *disp_r;
                 /*! @} */
 
+                // Measurement 
+                size_t tileSize = 256;
+                size_t numBytesAfterCompression = 0;
+                // compression ratio
+                using compressionPercent = std::chrono::duration<float>;
+                std::vector<compressionPercent> compressions;
+                // Compression time
+                using realTime = std::chrono::duration<double, std::milli>;
+                std::vector<realTime> recvtimes, decompressiontimes;
+                std::vector<realTime> decompressionTime, recvTime, sendTime;
+
+
+                using compressionStats = pico_bench::Statistics<compressionPercent>;
+                using Stats = pico_bench::Statistics<realTime>;
                 mpicommon::Group waitForConnection(const mpicommon::Group &outFacingGroup,
                                        const int &portNum);        
-                //void openInfoPort(const std::string &mpiPortName,
-                                  //const WallConfig &wallConfig,
-                                  //const int &PortNum);
+
                 void sendConfigToClient(const mpicommon::Group &outside, 
                                         const mpicommon::Group &me,
                                         const WallConfig &wallConfig);
+                void endFramePrint();
 
         };
         void startWallServer(const mpicommon::Group world,
@@ -97,7 +111,7 @@ namespace ospray {
                                     void *objectForCallback,
                                     int portNum,
                                     int process_pernode,
-                                    bool use_tcp,
                                     int clientNum);
+
   }// ospray::dw
 }//ospray

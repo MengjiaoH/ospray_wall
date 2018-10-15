@@ -15,6 +15,7 @@
 #include "mpiCommon/MPICommon.h"
 #include "ospcommon/containers/TransactionalBuffer.h"
 #include "ospcommon/networking/Socket.h"
+#include "bench/pico_bench/pico_bench.h"
 
 namespace ospray{
     namespace dw{
@@ -24,26 +25,27 @@ namespace ospray{
 
         class Client{
             public:
+            
                 Client(const std::string &hostName, 
                        const int &portNum,
                        const mpicommon::Group &me,
-                       const bool use_tcp,
                        const WallInfo *wallinfo);
+                
                 ~Client();
                 
-                std::atomic<bool> quit_state;
                 vec2i totalPixelsInWall() const;
                 const WallConfig *getWallConfig() const{ return wallConfig; }
-
                 void writeTile(const PlainTile &tile);
                 void sendTile();
                 void endFrame();
+                void printStatistics();
                             
             private: 
                 // host name and port number connect to
                 std::string hostName;
-                int portNum;
                 int sock;
+                int portNum;
+                std::mutex sendMutex;
 
                 // MPI Group
                 mpicommon::Group me;
@@ -51,17 +53,20 @@ namespace ospray{
                 // wall config
                 WallConfig *wallConfig;
                 WallInfo *wallInfo;
-                
-                // check for received 
-                bool hasMetaData;
-                bool use_tcp;
-                std::mutex sendMutex;
-                std::mutex state_mutex;
-
+ 
+                size_t numWrittenThisFrame = 0;
+                size_t numExpectedThisFrame;          
                 ospcommon::TransactionalBuffer<std::shared_ptr<Message>> outbox;
+ 
+                // Measurement
                 
+                using realTime = std::chrono::duration<double, std::milli>;
+                std::vector<realTime> sendtimes, compressiontimes;
+                std::vector<realTime> sendTime, compressionTime;
+                using Stats = pico_bench::Statistics<realTime>;
+
                 void establishConnection();
-                void receiveWallConfig(const WallInfo *wallinfo );
+                void constructWallConfig(const WallInfo *wallinfo );
         };
     }
 }

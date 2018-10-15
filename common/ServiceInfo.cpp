@@ -18,19 +18,20 @@ namespace ospray{
             {
                 printf("\n Socket creation error \n");
             }
-      
             memset(&serv_addr, '0', sizeof(serv_addr));
-      
             serv_addr.sin_family = AF_INET;
             serv_addr.sin_port = htons(portNo);
             //serv_addr.sin_addr.s_addr = inet_addr(hostName.c_str());
-          
+
             //Convert IPv4 and IPv6 addresses from text to binary form
-            if(inet_pton(AF_INET, "155.98.19.60", &serv_addr.sin_addr)<=0) 
+            // if(inet_pton(AF_INET, "155.98.19.60", &serv_addr.sin_addr)<=0) 
+            // {
+            //     printf("\nInvalid address/ Address not supported \n");
+            // }
+            if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) 
             {
                 printf("\nInvalid address/ Address not supported \n");
-            }
-      
+            } 
             if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
             {
                 printf("\nConnection Failed \n");
@@ -55,7 +56,7 @@ namespace ospray{
             //                                                         << wallInfo -> pixelsPerDisplay.y << std::endl;
             // std::cout << " total pixels in the wall = " << wallInfo ->totalPixelsInWall.x << " "
             //                                                                  << wallInfo -> totalPixelsInWall.y << std::endl;
-            
+
             // !! Send the number of clients
             // int clientNum = 5;
             // send(sock, &clientNum, 4, 0);
@@ -107,14 +108,14 @@ namespace ospray{
 
             // send mpi port name
             int str_length = hostName.length();
-            std::cout << "string length = " << str_length << std::endl;
+            // std::cout << "string length = " << str_length << std::endl;
             send(new_socket, &str_length, 4, 0);
             send(new_socket, hostName.data(), str_length, 0);
             // Send wall Info
             send(new_socket, &wallInfo, sizeof(WallInfo), 0);
             // Read the number of clients will connect 
             valread = recv(new_socket, &clientNum, 4, 0);
-            std::cout << " DEBUG: clientNum = " << clientNum << std::endl;
+            // std::cout << " DEBUG: clientNum = " << clientNum << std::endl;
         }// ! End of sendTo
 }// end of ospray::dw
 }// end of ospray

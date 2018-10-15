@@ -197,7 +197,7 @@ extern "C" int main(int argc, const char **argv){
     //  std::cout << "rank " << me.rank << " size = " <<  wallInfo.numDisplays.x << " " <<
     //                                                                               wallInfo.numDisplays.y<< std::endl;
     // Send wallinfo to other ranks 
-    client = new Client(hostName, portNum, me, remote_mode, &wallInfo);
+    client = new Client(hostName, portNum, me,  &wallInfo);
 
 
     int frames = 0;
