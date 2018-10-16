@@ -1,0 +1,116 @@
+Entire displaywall 36 * 2560 * 1440
+
+Experiment with Kepler Cluster
+6 nodes
+(1) Using framebuffer without pixel op and send/recv [1.3 FPS]
+
+
+Experiment with Desktop with 30 thread
+Without pixel op [0.24 fps]
+With pixel op [0.16 fps]
+Client Side:
+Message Send Time:
+	max: 107.999ms
+	min: 107.999ms
+	median: 107.999ms
+	median abs dev: 0ms
+	mean: 107.999ms
+	std dev: 0ms
+	# of samples: 1
+
+Compression Time
+	max: 2103.63ms
+	min: 2103.63ms
+	median: 2103.63ms
+	median abs dev: 0ms
+	mean: 2103.63ms
+	std dev: 0ms
+	# of samples: 1
+
+Display Cluster:
+
+Message recv statistics:
+Statistics:
+	max: 2154.39ms
+	min: 7.99428ms
+	median: 226.396ms
+	median abs dev: 189.592ms
+	mean: 601.486ms
+	std dev: 644.978ms
+	# of samples: 50
+
+Decompression time statistics:
+	min: 444.23ms
+	median: 637.341ms
+	min: 455.587ms
+	median: ms
+	std dev: 50.9234ms601.538ms
+	min: 440.91ms
+	median: 519.913ms
+	median abs dev: 50.3069ms
+	# of samples: 14
+
+Experiment on Desktop with 40 thread
+
+with pixel op [0.22 fps]
+
+Client side:
+Compression time statistics:
+Statistics:
+	max: 2314.61ms
+	min: 2314.61ms
+	median: 2314.61ms
+	median abs dev: 0ms
+	mean: 2314.61ms
+	std dev: 0ms
+	# of samples: 1
+
+Message send statistics:
+Statistics:
+	max: 72.213ms
+	min: 72.213ms
+	median: 72.213ms
+	median abs dev: 0ms
+	mean: 72.213ms
+	std dev: 0ms
+	# of samples: 1
+
+Display Cluster:
+Message recv statistics:
+Statistics:
+	max: 5394.28ms
+	min: 107.059ms
+	median: 2725.26ms
+	median abs dev: 1351.7ms
+	mean: 2735.68ms
+	std dev: 1559.46ms
+	# of samples: 50
+
+Compression ratio statistics: 
+Statistics:
+	max: 9.90753%
+	min: 0%
+	median: 3.27606%
+	median abs dev: 0.726318%
+	mean: 3.61015%
+	std dev: 1.24231%
+	# of samples: 103539
+
+Decompression time statistics:
+Statistics:
+	max: 689.372ms
+	min: 496.719ms
+	median: 
+	min: 516.476ms
+	median: 615.334ms
+	median abs dev: 56.0356ms
+	mean: 615.224ms
+	std dev: 60.7355ms
+	# of samples: 15
+
+
+
+
+
+
+

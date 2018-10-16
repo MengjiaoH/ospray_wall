@@ -202,20 +202,13 @@ namespace ospray{
              //Render
             while(1){
                 frameID++;
-<<<<<<< HEAD
-                double lastTime = getSysTime();
-                ospRenderFrame(pixelOP_framebuffer, renderer, OSP_FB_COLOR);
-                // ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR);
-                double thisTime = getSysTime();
-                std::cout << "Frame Rate  = " << 1.f / (thisTime - lastTime) << std::endl;
-=======
                auto lastTime = std::chrono::high_resolution_clock::now();
                ospRenderFrame(pixelOP_framebuffer, renderer, OSP_FB_COLOR);
                // ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR);
                auto thisTime = std::chrono::high_resolution_clock::now();
                renderTime.push_back(std::chrono::duration_cast<Time>(thisTime - lastTime));
                 // std::cout << "Frame Rate  = " << 1.f / (thisTime - lastTime) << std::endl;
->>>>>>> 7aecb9d6ff19a27c2b9a14000b6013e629970088
+
                  //double thisTime = getSysTime();
                  //std::cout << "offload frame rate = " << 1.f / (thisTime - lastTime) << std::endl;
                 cam_pos[1] += 1.0;

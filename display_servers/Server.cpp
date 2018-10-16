@@ -151,39 +151,7 @@ namespace ospray{
                                 break;
                             }
                         }
-<<<<<<< HEAD
-                        }
 
-                        int tileSize = 256;
-            size_t max_numBytes = tileSize * tileSize * 4 + sizeof(CompressedTileHeader);
-
-            // while (1) {
-                //  std::cout << " ========== start receiving tiles ========== " << std::endl;
-            //             size_t numWrittenThisFrame = 0;
-            // size_t numExpectedThisFrame = wallConfig.totalPixelCount();
-                 for (int i = 0; i < clientNum; i++)
-                 {
-                    sd = client_socket[i];
-
-                    if (FD_ISSET( sd , &readfds)){
-                        static std::atomic<int> tileID;
-                        int myTileID = tileID++;
-                        CompressedTile encoded;
-                        // receive the data size of compressed tile
-                        int numBytes = 0;
-                        int dataSize = recv(sd, &numBytes, sizeof(int), 0 );
-                        //std::cout << " Compressed tile would have " << numBytes << " bytes" << std::endl;
-                        encoded.numBytes = numBytes;
-                        encoded.data = new unsigned char[encoded.numBytes];
-                        //Check if it was for closing , and also read the
-                        //incoming message
-                        box2i region;
-
-                        //std::lock_guard<std::mutex> lock(recvMutex);
-                        valread = recv( sd , encoded.data, encoded.numBytes, MSG_WAITALL);
-                        //std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;
-                        region = encoded.getRegion();
-=======
                     }
                  
                     //! Start receiving tiles from outside
@@ -193,7 +161,6 @@ namespace ospray{
                     for (int i = 0; i < clientNum; i++)
                     {
                         sd = client_socket[i];
->>>>>>> 7aecb9d6ff19a27c2b9a14000b6013e629970088
 
                         if (FD_ISSET( sd , &readfds)){
                             static std::atomic<int> tileID;
@@ -202,7 +169,7 @@ namespace ospray{
                             // receive the data size of compressed tile
                             int numBytes = 0;
                             auto start = std::chrono::high_resolution_clock::now();
-                            int dataSize = recv(sd, &numBytes, sizeof(int), 0 );
+                            int dataSize = recv(sd, &numBytes, sizeof(int), 0);
                             // std::cout << " Compressed tile would have " << numBytes << " bytes" << std::endl;
                             encoded.numBytes = numBytes;
                             encoded.data = new unsigned char[encoded.numBytes];
@@ -210,24 +177,13 @@ namespace ospray{
                             std::lock_guard<std::mutex> lock(recvMutex);
                             valread = recv( sd , encoded.data, encoded.numBytes, MSG_WAITALL);
                             auto end = std::chrono::high_resolution_clock::now();
-                            // std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;
+                            //std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;
                             region = encoded.getRegion();
                             recvtimes.push_back(std::chrono::duration_cast<realTime>(end - start));
                             compressions.emplace_back( 100.0 * static_cast<float>(numBytes) / (tileSize * tileSize));
                             
                             const box2i affectedDisplays = wallConfig.affectedDisplays(region);
 
-<<<<<<< HEAD
-                    //  printf("region %i %i - %i %i displays %i %i - %i %i\n",
-                    //         region.lower.x,
-                    //         region.lower.y,
-                    //         region.upper.x,
-                    //         region.upper.y,
-                    //         affectedDisplays.lower.x,
-                    //         affectedDisplays.lower.y,
-                    //         affectedDisplays.upper.x,
-                    //         affectedDisplays.upper.y);
-=======
                             // printf("region %i %i - %i %i displays %i %i - %i %i\n",
                             //         region.lower.x,
                             //         region.lower.y,
@@ -237,7 +193,6 @@ namespace ospray{
                             //         affectedDisplays.lower.y,
                             //         affectedDisplays.upper.x,
                             //         affectedDisplays.upper.y);
->>>>>>> 7aecb9d6ff19a27c2b9a14000b6013e629970088
 
                             for (int dy=affectedDisplays.lower.y;dy<affectedDisplays.upper.y;dy++)
                                 for (int dx=affectedDisplays.lower.x;dx<affectedDisplays.upper.x;dx++) {
