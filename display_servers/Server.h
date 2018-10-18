@@ -40,10 +40,10 @@ namespace ospray {
                 
                 int service_sock;
                 int valread;
-                int client_socket[30];
                 fd_set readfds;
                 int max_sd, sd;
-                int max_clients = 30;
+                int max_clients = 40;
+                int client_socket[40];
                 struct sockaddr_in address;
                 int addrlen;
                 std::mutex recvMutex;

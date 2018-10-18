@@ -157,6 +157,7 @@ namespace ospray{
                                 break;
                             }
                         }
+
                     }
                  
                     //! Start receiving tiles from outside
@@ -186,7 +187,7 @@ namespace ospray{
                             //region = encoded.getRegion();
                             //recvtimes.push_back(std::chrono::duration_cast<realTime>(end - start));
                             //// compressions.emplace_back( 100.0 * static_cast<float>(numBytes) / (tileSize * tileSize));
-                            
+                           
                             //const box2i affectedDisplays = wallConfig.affectedDisplays(region);
 
                             //// printf("region %i %i - %i %i displays %i %i - %i %i\n",

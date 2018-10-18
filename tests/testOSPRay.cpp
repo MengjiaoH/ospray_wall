@@ -210,6 +210,9 @@ namespace ospray{
                Time t = thisTime - lastTime;
                //renderTime.push_back(std::chrono::duration_cast<Time>(thisTime - lastTime));
                std::cout << "Frame Rate  = " << 1.f / t.count() * 1000  << std::endl;
+               //renderTime.push_back(std::chrono::duration_cast<Time>(thisTime - lastTime));
+                // std::cout << "Frame Rate  = " << 1.f / (thisTime - lastTime) << std::endl;
+
                  //double thisTime = getSysTime();
                  //std::cout << "offload frame rate = " << 1.f / (thisTime - lastTime) << std::endl;
                 cam_pos[1] += 1.0;
