@@ -53,18 +53,19 @@ namespace ospray{
   
             serv_addr.sin_family = AF_INET;
             serv_addr.sin_port = htons(portNum);
-            //serv_addr.sin_addr.s_addr = inet_addr(hostName.c_str());
+            serv_addr.sin_addr.s_addr = inet_addr(hostName.c_str());
      
             // TODO: connect use hostname instead of IP address  
             // Convert IPv4 and IPv6 addresses from text to binary form
-            // if(inet_pton(AF_INET, "155.98.19.60", &serv_addr.sin_addr)<=0) 
-            // {
-            //     printf("\nInvalid address/ Address not supported \n");
-            // }
-            if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) 
-            {
-                printf("\nInvalid address/ Address not supported \n");
-            }
+            // "155.98.19.60" powerwall00
+             //if(inet_pton(AF_INET, "155.98.19.60", &serv_addr.sin_addr)<=0) 
+             //{
+                 //printf("\nInvalid address/ Address not supported \n");
+             //}
+             if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) 
+             {
+                 printf("\nInvalid address/ Address not supported \n");
+             }
   
             if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
             {
@@ -177,15 +178,15 @@ namespace ospray{
             // Correct !
 
             //outbox.push_back(message);
-            //printf("region %i %i - %i %i displays %i %i - %i %i\n",
-                    //tile.region.lower.x,
-                    //tile.region.lower.y,
-                   //tile.region.upper.x,
-                   //tile.region.upper.y,
-                   //affectedDisplays.lower.x,
-                   //affectedDisplays.lower.y,
-                   //affectedDisplays.upper.x,
-                   //affectedDisplays.upper.y);
+            // printf("region %i %i - %i %i displays %i %i - %i %i\n",
+            //         region.lower.x,
+            //         region.lower.y,
+            //         region.upper.x,
+            //         region.upper.y,
+            //        affectedDisplays.lower.x,
+            //        affectedDisplays.lower.y,
+            //        affectedDisplays.upper.x,
+            //        affectedDisplays.upper.y);
 
         }// end of writeTile
 

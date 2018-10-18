@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <atomic>
 #include <chrono>
+#include <thread>
 
 namespace ospray{
     namespace dw{
@@ -63,7 +64,8 @@ namespace ospray{
         {
             char portName[MPI_MAX_PORT_NAME];
             MPI_Comm outside;
-            if (outwardFacingGroup.rank == 0) { 
+            if (outwardFacingGroup.rank == 0)
+            { 
                 std::cout << std::endl;
                 int opt = 1;
                 int activity;
@@ -148,6 +150,10 @@ namespace ospray{
                             {
                                 client_socket[i] = new_socket;  
                                 printf("Adding to list of sockets as %d\n" , i);
+                                printf("Start a new thread handling incoming tiles ..");
+                                std::thread recvTilesThread([i, this]{
+                                        printf("debug threading");
+                                        runDispatcher(i);});
                                 break;
                             }
                         }
@@ -157,84 +163,84 @@ namespace ospray{
                     // TODO: Try to move it to another method
                     // TODO: Push tiles in a inbox 
                     // TODO: Send out tiles in a separate thread
-                    for (int i = 0; i < clientNum; i++)
-                    {
-                        sd = client_socket[i];
+                    //for (int i = 0; i < clientNum; i++)
+                    //{
+                        //sd = client_socket[i];
 
-                        if (FD_ISSET( sd , &readfds)){
-                            static std::atomic<int> tileID;
-                            int myTileID = tileID++;
-                            CompressedTile encoded;
-                            // receive the data size of compressed tile
-                            int numBytes = 0;
-                            auto start = std::chrono::high_resolution_clock::now();
-                            int dataSize = recv(sd, &numBytes, sizeof(int), 0 );
-                            // std::cout << " Compressed tile would have " << numBytes << " bytes" << std::endl;
-                            encoded.numBytes = numBytes;
-                            encoded.data = new unsigned char[encoded.numBytes];
-                            box2i region;
-                            std::lock_guard<std::mutex> lock(recvMutex);
-                            valread = recv( sd , encoded.data, encoded.numBytes, MSG_WAITALL);
-                            auto end = std::chrono::high_resolution_clock::now();
-                            // std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;
-                            region = encoded.getRegion();
-                            recvtimes.push_back(std::chrono::duration_cast<realTime>(end - start));
-                            compressions.emplace_back( 100.0 * static_cast<float>(numBytes) / (tileSize * tileSize));
+                        //if (FD_ISSET( sd , &readfds)){
+                            //static std::atomic<int> tileID;
+                            //int myTileID = tileID++;
+                            //CompressedTile encoded;
+                            //// receive the data size of compressed tile
+                            //int numBytes = 0;
+                            //auto start = std::chrono::high_resolution_clock::now();
+                            //int dataSize = recv(sd, &numBytes, sizeof(int), 0 );
+                            //// std::cout << " Compressed tile would have " << numBytes << " bytes" << std::endl;
+                            //encoded.numBytes = numBytes;
+                            //encoded.data = new unsigned char[encoded.numBytes];
+                            //box2i region;
+                            //std::lock_guard<std::mutex> lock(recvMutex);
+                            //valread = recv( sd , encoded.data, encoded.numBytes, MSG_WAITALL);
+                            //auto end = std::chrono::high_resolution_clock::now();
+                            //// std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;
+                            //region = encoded.getRegion();
+                            //recvtimes.push_back(std::chrono::duration_cast<realTime>(end - start));
+                            //// compressions.emplace_back( 100.0 * static_cast<float>(numBytes) / (tileSize * tileSize));
                             
-                            const box2i affectedDisplays = wallConfig.affectedDisplays(region);
+                            //const box2i affectedDisplays = wallConfig.affectedDisplays(region);
 
-                            // printf("region %i %i - %i %i displays %i %i - %i %i\n",
-                            //         region.lower.x,
-                            //         region.lower.y,
-                            //         region.upper.x,
-                            //         region.upper.y,
-                            //         affectedDisplays.lower.x,
-                            //         affectedDisplays.lower.y,
-                            //         affectedDisplays.upper.x,
-                            //         affectedDisplays.upper.y);
+                            //// printf("region %i %i - %i %i displays %i %i - %i %i\n",
+                            ////         region.lower.x,
+                            ////         region.lower.y,
+                            ////         region.upper.x,
+                            ////         region.upper.y,
+                            ////         affectedDisplays.lower.x,
+                            ////         affectedDisplays.lower.y,
+                            ////         affectedDisplays.upper.x,
+                            ////         affectedDisplays.upper.y);
 
-                            for (int dy=affectedDisplays.lower.y;dy<affectedDisplays.upper.y;dy++)
-                                for (int dx=affectedDisplays.lower.x;dx<affectedDisplays.upper.x;dx++) {
-                                    int toRank = wallConfig.rankOfDisplay(vec2i(dx,dy));
-                                    MPI_CALL(Send(encoded.data, encoded.numBytes, MPI_BYTE, toRank, myTileID, displayGroup.comm));
-                            }
+                            //for (int dy=affectedDisplays.lower.y;dy<affectedDisplays.upper.y;dy++)
+                                //for (int dx=affectedDisplays.lower.x;dx<affectedDisplays.upper.x;dx++) {
+                                    //int toRank = wallConfig.rankOfDisplay(vec2i(dx,dy));
+                                    //MPI_CALL(Send(encoded.data, encoded.numBytes, MPI_BYTE, toRank, myTileID, displayGroup.comm));
+                            //}
 
-                            numWrittenThisFrame += region.size().product();
-                            numBytesAfterCompression += encoded.numBytes;
+                            //numWrittenThisFrame += region.size().product();
+                            //numBytesAfterCompression += encoded.numBytes;
                             
-                            // printf("dispatch %i/%i\n",numWrittenThisFrame,numExpectedThisFrame);
+                            //// printf("dispatch %i/%i\n",numWrittenThisFrame,numExpectedThisFrame);
 
-                            if (numWrittenThisFrame == numExpectedThisFrame) {
-                                // printf("Compression ratio = %d\n", numBytesAfterCompression ); 
-                                // printf("#osp:dw(hn): head node has a full frame\n");
-                                numWrittenThisFrame = 0;
-                                numBytesAfterCompression = 0;
-                                realTime sum_recv;
-                                for(size_t i = 0; i < recvtimes.size(); i++){
-                                    sum_recv += recvtimes[i];
-                                }
-                                recvTime.push_back(std::chrono::duration_cast<realTime>(sum_recv));
-                                recvtimes.clear();
-                                dispatchGroup.barrier();
-                                // endFramePrint();
-                            }
+                            //if (numWrittenThisFrame == numExpectedThisFrame) {
+                                //// printf("Compression ratio = %d\n", numBytesAfterCompression ); 
+                                //// printf("#osp:dw(hn): head node has a full frame\n");
+                                //numWrittenThisFrame = 0;
+                                //numBytesAfterCompression = 0;
+                                //realTime sum_recv;
+                                //for(size_t i = 0; i < recvtimes.size(); i++){
+                                    //sum_recv += recvtimes[i];
+                                //}
+                                //recvTime.push_back(std::chrono::duration_cast<realTime>(sum_recv));
+                                //recvtimes.clear();
+                                //dispatchGroup.barrier();
+                                //// endFramePrint();
+                            //}
 
-                            if (valread == 0){
-                                //Somebody disconnected , get his details and print
-                                getpeername(sd , (struct sockaddr*)&address , (socklen_t*)&addrlen);
-                                printf("Host disconnected , ip %s , port %d \n" , inet_ntoa(address.sin_addr) , ntohs(address.sin_port));
-                                //Close the socket and mark as 0 in list for reuse
-                                close( sd );
-                                client_socket[i] = 0;
-                                endFramePrint();
+                            //if (valread == 0){
+                                ////Somebody disconnected , get his details and print
+                                //getpeername(sd , (struct sockaddr*)&address , (socklen_t*)&addrlen);
+                                //printf("Host disconnected , ip %s , port %d \n" , inet_ntoa(address.sin_addr) , ntohs(address.sin_port));
+                                ////Close the socket and mark as 0 in list for reuse
+                                //close( sd );
+                                //client_socket[i] = 0;
+                                //endFramePrint();
 
-                            }
-                    }
+                            //}
+                    //}
                 }
             }
             outwardFacingGroup.barrier();
             return outwardFacingGroup;
-        }
+            //}
         }
 
         void Server::allocateFrameBuffers()

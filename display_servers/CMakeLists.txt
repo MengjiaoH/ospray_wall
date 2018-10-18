@@ -5,7 +5,7 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/apps/exampleViewer/common/glfw/include
 ADD_EXECUTABLE(ospWall
   main.cpp
   glfwWindow.cpp
-  #Dispatcher.cpp
+  Dispatcher.cpp
   processIncomingTiles.cpp
   Server.cpp
   )

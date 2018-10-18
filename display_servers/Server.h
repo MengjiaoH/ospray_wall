@@ -33,10 +33,8 @@ namespace ospray {
                 void setupCommunication(); 
                 void processIncomingTiles(mpicommon::Group &ourside);
                 void allocateFrameBuffers();
-                void runDispatcher(const mpicommon::Group &outsideClients,
-                                   const mpicommon::Group &displayGroup,
-                                   const WallConfig &wallConfig,
-                                   const bool &use_tcp);
+                void runDispatcher(int socket_index);
+
             private:
                 const int portNum;
                 

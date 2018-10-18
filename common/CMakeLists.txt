@@ -53,30 +53,6 @@ ELSE()
   SET(TURBOJPEG_LIBRARY "")
 ENDIF()
 
-#IF(USE_SNAPPY)
-  #ADD_DEFINITIONS(-DSNAPPY=1)
-
-  #FIND_PATH(Snappy_INCLUDE_DIR 
-  #NAMES snappy.h
-  #PATHS ${SNAPPY_ROOT_DIR} ${SNAPPY_ROOT_DIR}/include)
-
-  #FIND_LIBRARY(Snappy_LIBRARIES 
-  #NAMES snappy
-  #PATHS ${SNAPPY_ROOT_DIR} ${SNAPPY_ROOT_DIR}/lib)
-
-  #INCLUDE(FindPackageHandleStandardArgs)
-  #find_package_handle_standard_args(Snappy DEFAULT_MSG Snappy_INCLUDE_DIR Snappy_LIBRARIES)
-
-  #IF(SNAPPY_FOUND)
-    #message(STATUS "Found Snappy  (include: ${Snappy_INCLUDE_DIR}, library: ${Snappy_LIBRARIES})")
-    #INCLUDE_DIRECTORIES(${Snappy_INCLUDE_DIR})
-  #ELSE()
-    #message(STATUS "Cannot Find Snappy")
-  #ENDIF()
-#ELSE()
-  #SET(Snappy_LIBRARIES "")
-#ENDIF()
-
 ADD_LIBRARY(ospray_wall_common
   WallConfig.cpp
   helper.cpp
@@ -87,7 +63,6 @@ ADD_LIBRARY(ospray_wall_common
 TARGET_LINK_LIBRARIES(ospray_wall_common
   ${MPI_CXX_LIBRARIES}
   ${TURBOJPEG_LIBRARY}
-  #${Snappy_LIBRARIES}
   ospray_mpi_common
   ospray
   )
