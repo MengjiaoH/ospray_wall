@@ -53,19 +53,18 @@ namespace ospray{
   
             serv_addr.sin_family = AF_INET;
             serv_addr.sin_port = htons(portNum);
-            serv_addr.sin_addr.s_addr = inet_addr(hostName.c_str());
+            //serv_addr.sin_addr.s_addr = inet_addr(hostName.c_str());
      
             // TODO: connect use hostname instead of IP address  
             // Convert IPv4 and IPv6 addresses from text to binary form
-            // "155.98.19.60" powerwall00
-             //if(inet_pton(AF_INET, "155.98.19.60", &serv_addr.sin_addr)<=0) 
-             //{
-                 //printf("\nInvalid address/ Address not supported \n");
-             //}
-             if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) 
-             {
-                 printf("\nInvalid address/ Address not supported \n");
-             }
+            // if(inet_pton(AF_INET, "155.98.19.60", &serv_addr.sin_addr)<=0) 
+            // {
+            //     printf("\nInvalid address/ Address not supported \n");
+            // }
+            if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) 
+            {
+                printf("\nInvalid address/ Address not supported \n");
+            }
   
             if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
             {
@@ -107,9 +106,9 @@ namespace ospray{
 
         void Client::endFrame()
         {
-            // if(me.rank == 0){
-            //     printStatistics();
-            // }
+            if(me.rank == 0){
+                printStatistics();
+            }
 
             MPI_CALL(Barrier(me.comm));
         }
@@ -138,9 +137,8 @@ namespace ospray{
             // TODO: Measure sending time
             auto start = std::chrono::high_resolution_clock::now();
             std::lock_guard<std::mutex> lock(sendMutex);
-
             int compressedData = send(sock, &encoded.numBytes, sizeof(int), MSG_MORE);
-            std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << compressedData << std::endl;
+            //std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << compressedData << std::endl;
             //! Send compressed tile
             int out = send(sock, encoded.data, encoded.numBytes, 0);
 
@@ -165,9 +163,10 @@ namespace ospray{
                 compressiontimes.clear();
                 sendtimes.clear();
             }
+            //std::cout << " Send tile ID = " << myTileID << " contains " << encoded.numBytes << " bytes and send " << out << " bytes" << std::endl;
 
             // ## Debug 
-            CompressedTileHeader *header = (CompressedTileHeader *)encoded.data;
+            // CompressedTileHeader *header = (CompressedTileHeader *)encoded.data;
 
             // std::string filename = "Message" + std::to_string(header ->region.lower.x) + "_"
             //                                  + std::to_string(header ->region.lower.y) + "_"
@@ -178,15 +177,15 @@ namespace ospray{
             // Correct !
 
             //outbox.push_back(message);
-            printf("region %i %i - %i %i displays %i %i - %i %i\n",
-                    region.lower.x,
-                    region.lower.y,
-                    region.upper.x,
-                    region.upper.y,
-                   affectedDisplays.lower.x,
-                   affectedDisplays.lower.y,
-                   affectedDisplays.upper.x,
-                   affectedDisplays.upper.y);
+            //printf("region %i %i - %i %i displays %i %i - %i %i\n",
+                    //tile.region.lower.x,
+                    //tile.region.lower.y,
+                   //tile.region.upper.x,
+                   //tile.region.upper.y,
+                   //affectedDisplays.lower.x,
+                   //affectedDisplays.lower.y,
+                   //affectedDisplays.upper.x,
+                   //affectedDisplays.upper.y);
 
         }// end of writeTile
 

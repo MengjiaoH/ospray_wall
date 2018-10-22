@@ -191,7 +191,6 @@ namespace ospray{
             ospSetData(pixelOp, "wallInfo", wallInfoData);
             ospCommit(pixelOp);
 
-            std::cout << "debug0" << std::endl;
             //Set pixelOp to the framebuffer
             ospSetPixelOp(pixelOP_framebuffer, pixelOp);
 
@@ -202,15 +201,12 @@ namespace ospray{
 
              //Render
             while(1){
-               frameID++;
+                frameID++;
                auto lastTime = std::chrono::high_resolution_clock::now();
                ospRenderFrame(pixelOP_framebuffer, renderer, OSP_FB_COLOR);
-               //ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR);
+               // ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR);
                auto thisTime = std::chrono::high_resolution_clock::now();
-               Time t = thisTime - lastTime;
-               //renderTime.push_back(std::chrono::duration_cast<Time>(thisTime - lastTime));
-               //std::cout << "Frame Rate  = " << 1.f / t.count() * 1000  << std::endl;
-               //renderTime.push_back(std::chrono::duration_cast<Time>(thisTime - lastTime));
+               renderTime.push_back(std::chrono::duration_cast<Time>(thisTime - lastTime));
                 // std::cout << "Frame Rate  = " << 1.f / (thisTime - lastTime) << std::endl;
 
                  //double thisTime = getSysTime();
@@ -222,11 +218,11 @@ namespace ospray{
                 ospCommit(camera);
             }
 
-            //if(!renderTime.empty()){
-                //Stats renderStats(renderTime);
-                //renderStats.time_suffix = "ms";
-                //std::cout  << "Render time statistics:\n" << renderStats << "\n";
-            //}
+            if(!renderTime.empty()){
+                Stats renderStats(renderTime);
+                renderStats.time_suffix = "ms";
+                std::cout  << "Decompression time statistics:\n" << renderStats << "\n";
+            }
 
 
 

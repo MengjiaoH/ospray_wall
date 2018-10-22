@@ -2,7 +2,6 @@
 #include <pthread.h>
 #include <atomic>
 #include <chrono>
-#include <thread>
 
 namespace ospray{
     namespace dw{
@@ -26,13 +25,13 @@ namespace ospray{
              numWrittenThisFrame(0), numExpectedThisFrame(wallConfig.totalPixels().product()),
              recv_l(NULL), recv_r(NULL), disp_l(NULL), disp_r(NULL), clientNum(clientNum)
         {
-            // commThread = std::thread([&](){
+            commThread = std::thread([&](){
                     setupCommunication();
-            // });
+            });
                     
-            // if(hasHeadNode && me.rank == 0){
-            //     commThread.join();
-            // }
+            if(hasHeadNode && me.rank == 0){
+                commThread.join();
+            }
         }
 
         void Server::setupCommunication()
@@ -46,130 +45,119 @@ namespace ospray{
                 // DISPATCHER
                 // =======================================================
                 if(world.rank == 0){
-                    mpicommon::Group outsideConnection = waitForConnection(dispatchGroup, portNum);
-                    // for(int i = 0; i < clientNum; i++){
-                            // printf("Start a new thread handling incoming tiles for socket #%d ..", client_socket[i]);
-                            // recvThreads[i] = std::thread([i, this]{
-                                // printf("debug threading\n");
-                                //runDispatcher(i);
-                                // });
-                            // recvThreads[i].detach();
-                    // }
-                    //runDispatcher(dispatchGroup, displayGroup, wallConfig, use_tcp);
+                    waitForConnection(portNum);
+                    runDispatcher();
                 }else{
                     // =======================================================
                     // TILE RECEIVER
                     // =======================================================
                      //canStartProcessing.lock();
                     mpicommon::Group incomingTiles = dispatchGroup;
-                    //processIncomingTiles(incomingTiles);
+                    processIncomingTiles(incomingTiles);
                 }
-                // for(int i = 0; i < clientNum; i++){
-                //     std::cout << "Joining a thread .." << std::endl;
-                //     recvThreads[i].join();
-                // }
             }
         }
 
-        mpicommon::Group Server::waitForConnection(const mpicommon::Group &outwardFacingGroup,
-                                                   const int &portNum)
+        void Server::waitForConnection(const int &portNum)
         {
             char portName[MPI_MAX_PORT_NAME];
             MPI_Comm outside;
-                std::cout << std::endl;
-                int opt = 1;
-                int activity;
-                int new_socket;
-                
-                // Set of socket descriptors
-                addrlen = sizeof(address);
-                // Creating socket file descriptor
-                if ((service_sock = socket(AF_INET, SOCK_STREAM, 0)) == 0){
-                    perror("socket failed");
-                    exit(EXIT_FAILURE);
-                }
-                // Forcefully attaching socket to the port 8080
-                if (setsockopt(service_sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
-                {
-                    perror("setsockopt");
-                    exit(EXIT_FAILURE);
-                }
-                address.sin_family = AF_INET;
-                address.sin_addr.s_addr = INADDR_ANY;
-                address.sin_port = htons(portNum);
-                // Forcefully attaching socket to the port 8080
-                if (bind(service_sock, (struct sockaddr *)&address, sizeof(address))<0)
-                {
-                    perror("bind failed");
-                    exit(EXIT_FAILURE);
-                }
-                if (listen(service_sock, 30) < 0)
-                {
-                    perror("listen");
-                    exit(EXIT_FAILURE);
-                }
-                    
-                // for (int i = 0; i < max_clients; i++)
-                // {
-                //     client_socket[i] = 0;
-                // }
-                // Accept incoming connections
-                printf("Waiting for connections ... \n");
-                int ii = 0;
-                 while(1)
-                // for(int s = 0; s < clientNum; s++)
-                {
-                    // std::cout << "DEBUG " << std::endl;
-                    // //clear the socket set
-                    FD_ZERO(&readfds);
-                    // // add master socket to set
-                    FD_SET(service_sock, &readfds);
-                    max_sd = service_sock;
-                    // add child sockets to set
-                    for( int i = 0; i < max_clients; i++){
-                        // socket descriptor
-                        sd = client_socket[i];
-                        // if valid socket descroptor then add to read list
-                        if(sd > 0){
-                            FD_SET(sd, &readfds);
-                        }
-                        // highest file descriptor number, need it for the select function
-                        if(sd > max_sd){
-                            max_sd = sd;
-                        }
+            std::cout << std::endl;
+            int opt = 1;
+            int activity;
+            int new_socket;
+            
+            // Set of socket descriptors
+            addrlen = sizeof(address);
+            // Creating socket file descriptor
+            if ((service_sock = socket(AF_INET, SOCK_STREAM, 0)) == 0){
+                perror("socket failed");
+                exit(EXIT_FAILURE);
+            }
+            // Forcefully attaching socket to the port 8080
+            if (setsockopt(service_sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
+            {
+                perror("setsockopt");
+                exit(EXIT_FAILURE);
+            }
+            address.sin_family = AF_INET;
+            address.sin_addr.s_addr = INADDR_ANY;
+            address.sin_port = htons(portNum);
+            // Forcefully attaching socket to the port 8080
+            if (bind(service_sock, (struct sockaddr *)&address, sizeof(address))<0)
+            {
+                perror("bind failed");
+                exit(EXIT_FAILURE);
+            }
+            if (listen(service_sock, 30) < 0)
+            {
+                perror("listen");
+                exit(EXIT_FAILURE);
+            }
+
+            for (int i = 0; i < max_clients; i++)
+            {
+                client_socket[i] = 0;
+            }
+            // Accept incoming connections
+            printf("Waiting for connections ... \n");
+            int  c = 0;
+            while(1)
+            // for(int c = 0; c < clientNum; c++)
+            {
+                //clear the socket set
+                FD_ZERO(&readfds);
+                // add master socket to set
+                FD_SET(service_sock, &readfds);
+                max_sd = service_sock;
+                // add child sockets to set
+                for( int i = 0; i < max_clients; i++){
+                    // socket descriptor
+                    sd = client_socket[i];
+                    // if valid socket descroptor then add to read list
+                    if(sd > 0){
+                        FD_SET(sd, &readfds);
                     }
-                    
-                    // activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
-                    // if((activity < 0) && (errno != EINTR)){
-                    //     printf("select error");
-                    // }
-                    // //If something happened on the master socket , 
-                    // //then its an incoming connection 
-                    if (FD_ISSET(service_sock, &readfds))  
-                    {  
-                        if ((new_socket = accept(service_sock, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)  
+                    // highest file descriptor number, need it for the select function
+                    if(sd > max_sd){
+                        max_sd = sd;
+                    }
+                }
+
+                activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
+                if((activity < 0) && (errno != EINTR)){
+                    printf("select error");
+                }
+                //If something happened on the master socket , 
+                //then its an incoming connection 
+                if (FD_ISSET(service_sock, &readfds))  
+                { 
+                    if ((new_socket = accept(service_sock, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)  
+                    {
+                        perror("accept");  
+                        exit(EXIT_FAILURE);  
+                    } 
+                    //inform user of socket number - used in send and receive commands 
+                    printf("New connection , socket fd is %d , ip is : %s , port : %d \n" , new_socket , inet_ntoa(address.sin_addr) , ntohs
+                            (address.sin_port));
+                    //add new socket to array of sockets 
+                    for (int i = 0; i < max_clients; i++)  {  
+                        //if position is empty 
+                        if( client_socket[i] == 0 ) 
                         {
-                            perror("accept");  
-                            exit(EXIT_FAILURE);  
-                        } 
-                        //inform user of socket number - used in send and receive commands 
-                        printf("New connection , socket fd is %d , ip is : %s , port : %d \n" , new_socket , inet_ntoa(address.sin_addr) , ntohs
-                               (address.sin_port));
-                        recvThreads[ii] = std::thread(&Server::runDispatcher, this, new_socket, readfds);
-                        // recvThreads[ii] = std::thread([new_socket, readfds, this]{
-                        //         runDispatcher(new_socket, readfds);
-                                // });
-                        //recvThreads[s].detach();
-                        std::cout << "ii == " << ii << std::endl;
-                        ii++;
+                            client_socket[i] = new_socket;
+                            printf("Adding to list of sockets as %d\n" , i);
+                            break;
+                        }
+                        c++;
                     }
-                } // end of while
-            //    for( int  s = 0; s  < clientNum; s++ ){
-            //                     std::cout << "join thread " << std::endl;
-            //                     recvThreads[s].join();
-            //                 } 
-            outwardFacingGroup.barrier();
-            return outwardFacingGroup;
+                }
+
+                if(c == clientNum ){
+                    break;
+                }
+            } // while
+            dispatchGroup.barrier();
         }
 
         void Server::allocateFrameBuffers()
