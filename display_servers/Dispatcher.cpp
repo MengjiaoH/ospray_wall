@@ -36,7 +36,7 @@ namespace ospray {
 
    /* [>! the dispatcher that receives tiles on the head node, and then
       dispatches them to the actual tile receivers */
-    void Server::runDispatcher()
+    void Server::runDispatcher(int socket_index)
     {
         size_t numWrittenThisFrame = 0;
         size_t numExpectedThisFrame = wallConfig.totalPixelCount();
@@ -45,11 +45,14 @@ namespace ospray {
         {
             FD_ZERO(&readfds);
             //std::cout << " ========== start receiving tiles ========== " << std::endl;
-            for(int i = 0; i < clientNum; i++)
-            {
-                sd = client_socket[i];
+            // for(int i = 0; i < clientNum; i++)
+            // {
+                sd = client_socket[socket_index];
+                // if(sd > max_sd){
+                //     max_sd = sd;
+                // }
                 FD_SET(sd, &readfds);
-                int activity = select(max_sd + 2, &readfds, NULL, NULL, NULL);
+                int activity = select(max_sd + 3 , &readfds, NULL, NULL, NULL);
 
                 if((activity < 0) && (errno != EINTR)){
                     printf("select error");
@@ -98,19 +101,19 @@ namespace ospray {
                     numWrittenThisFrame += region.size().product();
                     numBytesAfterCompression += encoded.numBytes;
                     
-                    // printf("dispatch %i/%i\n",numWrittenThisFrame,numExpectedThisFrame);
+                    // printf("socket %i  dispatch %i/%i\n", sd, numWrittenThisFrame,numExpectedThisFrame);
 
                     if (numWrittenThisFrame == numExpectedThisFrame) {
                         // printf("Compression ratio = %d\n", numBytesAfterCompression ); 
                         // printf("#osp:dw(hn): head node has a full frame\n");
                         numWrittenThisFrame = 0;
                         numBytesAfterCompression = 0;
-                        realTime sum_recv;
-                        for(size_t i = 0; i < recvtimes.size(); i++){
-                            sum_recv += recvtimes[i];
-                        }
-                        recvTime.push_back(std::chrono::duration_cast<realTime>(sum_recv));
-                        recvtimes.clear();
+                        // realTime sum_recv;
+                        // for(size_t i = 0; i < recvtimes.size(); i++){
+                        //     sum_recv += recvtimes[i];
+                        // }
+                        // recvTime.push_back(std::chrono::duration_cast<realTime>(sum_recv));
+                        // recvtimes.clear();
                         dispatchGroup.barrier();
                         // endFramePrint();
                     }
@@ -121,11 +124,11 @@ namespace ospray {
                         printf("Host disconnected , ip %s , port %d \n" , inet_ntoa(address.sin_addr) , ntohs(address.sin_port));
                         //Close the socket and mark as 0 in list for reuse
                         close( sd );
-                        client_socket[i] = 0;
+                        client_socket[socket_index] = 0;
                         endFramePrint();
                     }
                 } // end of fd_isset
-            }// end of for loop
+            // }// end of for loop
         }// end of while
 
     }// end of runDispatcher
