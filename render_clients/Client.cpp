@@ -107,9 +107,9 @@ namespace ospray{
 
         void Client::endFrame()
         {
-            if(me.rank == 0){
-                printStatistics();
-            }
+            // if(me.rank == 0){
+            //     printStatistics();
+            // }
 
             MPI_CALL(Barrier(me.comm));
         }
@@ -138,8 +138,9 @@ namespace ospray{
             // TODO: Measure sending time
             auto start = std::chrono::high_resolution_clock::now();
             std::lock_guard<std::mutex> lock(sendMutex);
+
             int compressedData = send(sock, &encoded.numBytes, sizeof(int), MSG_MORE);
-            //std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << compressedData << std::endl;
+            std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << compressedData << std::endl;
             //! Send compressed tile
             int out = send(sock, encoded.data, encoded.numBytes, 0);
 
@@ -164,10 +165,9 @@ namespace ospray{
                 compressiontimes.clear();
                 sendtimes.clear();
             }
-            //std::cout << " Send tile ID = " << myTileID << " contains " << encoded.numBytes << " bytes and send " << out << " bytes" << std::endl;
 
             // ## Debug 
-            // CompressedTileHeader *header = (CompressedTileHeader *)encoded.data;
+            CompressedTileHeader *header = (CompressedTileHeader *)encoded.data;
 
             // std::string filename = "Message" + std::to_string(header ->region.lower.x) + "_"
             //                                  + std::to_string(header ->region.lower.y) + "_"
@@ -178,15 +178,15 @@ namespace ospray{
             // Correct !
 
             //outbox.push_back(message);
-            // printf("region %i %i - %i %i displays %i %i - %i %i\n",
-            //         region.lower.x,
-            //         region.lower.y,
-            //         region.upper.x,
-            //         region.upper.y,
-            //        affectedDisplays.lower.x,
-            //        affectedDisplays.lower.y,
-            //        affectedDisplays.upper.x,
-            //        affectedDisplays.upper.y);
+            printf("region %i %i - %i %i displays %i %i - %i %i\n",
+                    region.lower.x,
+                    region.lower.y,
+                    region.upper.x,
+                    region.upper.y,
+                   affectedDisplays.lower.x,
+                   affectedDisplays.lower.y,
+                   affectedDisplays.upper.x,
+                   affectedDisplays.upper.y);
 
         }// end of writeTile
 

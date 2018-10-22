@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <chrono>
+#include <thread>
 
 namespace ospray {
   namespace dw {
@@ -33,7 +34,7 @@ namespace ospray {
                 void setupCommunication(); 
                 void processIncomingTiles(mpicommon::Group &ourside);
                 void allocateFrameBuffers();
-                void runDispatcher(int socket_index);
+                void runDispatcher(int socket_index, fd_set readfds);
 
             private:
                 const int portNum;
@@ -52,6 +53,7 @@ namespace ospray {
                 int clientNum;
 
                 static std::thread commThread;
+                std::thread recvThreads[10];
                 /*! group that contails ALL display service procs, including the
                     head node (if applicable) */
                 const mpicommon::Group me;

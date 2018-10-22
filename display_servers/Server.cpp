@@ -26,13 +26,13 @@ namespace ospray{
              numWrittenThisFrame(0), numExpectedThisFrame(wallConfig.totalPixels().product()),
              recv_l(NULL), recv_r(NULL), disp_l(NULL), disp_r(NULL), clientNum(clientNum)
         {
-            commThread = std::thread([&](){
+            // commThread = std::thread([&](){
                     setupCommunication();
-            });
+            // });
                     
-            if(hasHeadNode && me.rank == 0){
-                commThread.join();
-            }
+            // if(hasHeadNode && me.rank == 0){
+            //     commThread.join();
+            // }
         }
 
         void Server::setupCommunication()
@@ -47,6 +47,14 @@ namespace ospray{
                 // =======================================================
                 if(world.rank == 0){
                     mpicommon::Group outsideConnection = waitForConnection(dispatchGroup, portNum);
+                    // for(int i = 0; i < clientNum; i++){
+                            // printf("Start a new thread handling incoming tiles for socket #%d ..", client_socket[i]);
+                            // recvThreads[i] = std::thread([i, this]{
+                                // printf("debug threading\n");
+                                //runDispatcher(i);
+                                // });
+                            // recvThreads[i].detach();
+                    // }
                     //runDispatcher(dispatchGroup, displayGroup, wallConfig, use_tcp);
                 }else{
                     // =======================================================
@@ -54,8 +62,12 @@ namespace ospray{
                     // =======================================================
                      //canStartProcessing.lock();
                     mpicommon::Group incomingTiles = dispatchGroup;
-                    processIncomingTiles(incomingTiles);
+                    //processIncomingTiles(incomingTiles);
                 }
+                // for(int i = 0; i < clientNum; i++){
+                //     std::cout << "Joining a thread .." << std::endl;
+                //     recvThreads[i].join();
+                // }
             }
         }
 
@@ -64,8 +76,6 @@ namespace ospray{
         {
             char portName[MPI_MAX_PORT_NAME];
             MPI_Comm outside;
-            if (outwardFacingGroup.rank == 0)
-            { 
                 std::cout << std::endl;
                 int opt = 1;
                 int activity;
@@ -99,18 +109,20 @@ namespace ospray{
                     exit(EXIT_FAILURE);
                 }
                     
-                for (int i = 0; i < max_clients; i++)
-                {
-                    client_socket[i] = 0;
-                }
+                // for (int i = 0; i < max_clients; i++)
+                // {
+                //     client_socket[i] = 0;
+                // }
                 // Accept incoming connections
                 printf("Waiting for connections ... \n");
-                
-                while(1)
+                int ii = 0;
+                 while(1)
+                // for(int s = 0; s < clientNum; s++)
                 {
-                    //clear the socket set
+                    // std::cout << "DEBUG " << std::endl;
+                    // //clear the socket set
                     FD_ZERO(&readfds);
-                    // add master socket to set
+                    // // add master socket to set
                     FD_SET(service_sock, &readfds);
                     max_sd = service_sock;
                     // add child sockets to set
@@ -127,12 +139,12 @@ namespace ospray{
                         }
                     }
                     
-                    activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
-                    if((activity < 0) && (errno != EINTR)){
-                        printf("select error");
-                    }
-                    //If something happened on the master socket , 
-                    //then its an incoming connection 
+                    // activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
+                    // if((activity < 0) && (errno != EINTR)){
+                    //     printf("select error");
+                    // }
+                    // //If something happened on the master socket , 
+                    // //then its an incoming connection 
                     if (FD_ISSET(service_sock, &readfds))  
                     {  
                         if ((new_socket = accept(service_sock, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)  
@@ -143,105 +155,21 @@ namespace ospray{
                         //inform user of socket number - used in send and receive commands 
                         printf("New connection , socket fd is %d , ip is : %s , port : %d \n" , new_socket , inet_ntoa(address.sin_addr) , ntohs
                                (address.sin_port));
-                        //add new socket to array of sockets 
-                        for (int i = 0; i < max_clients; i++)  {  
-                            //if position is empty 
-                            if( client_socket[i] == 0 )  
-                            {
-                                client_socket[i] = new_socket;  
-                                printf("Adding to list of sockets as %d\n" , i);
-                                printf("Start a new thread handling incoming tiles ..");
-                                std::thread recvTilesThread([i, this]{
-                                        printf("debug threading");
-                                        runDispatcher(i);});
-                                break;
-                            }
-                        }
-
+                        recvThreads[ii] = std::thread(&Server::runDispatcher, this, new_socket, readfds);
+                        // recvThreads[ii] = std::thread([new_socket, readfds, this]{
+                        //         runDispatcher(new_socket, readfds);
+                                // });
+                        //recvThreads[s].detach();
+                        std::cout << "ii == " << ii << std::endl;
+                        ii++;
                     }
-                 
-                    //! Start receiving tiles from outside
-                    // TODO: Try to move it to another method
-                    // TODO: Push tiles in a inbox 
-                    // TODO: Send out tiles in a separate thread
-                    //for (int i = 0; i < clientNum; i++)
-                    //{
-                        //sd = client_socket[i];
-
-                        //if (FD_ISSET( sd , &readfds)){
-                            //static std::atomic<int> tileID;
-                            //int myTileID = tileID++;
-                            //CompressedTile encoded;
-                            //// receive the data size of compressed tile
-                            //int numBytes = 0;
-                            //auto start = std::chrono::high_resolution_clock::now();
-                            //int dataSize = recv(sd, &numBytes, sizeof(int), 0 );
-                            //// std::cout << " Compressed tile would have " << numBytes << " bytes" << std::endl;
-                            //encoded.numBytes = numBytes;
-                            //encoded.data = new unsigned char[encoded.numBytes];
-                            //box2i region;
-                            //std::lock_guard<std::mutex> lock(recvMutex);
-                            //valread = recv( sd , encoded.data, encoded.numBytes, MSG_WAITALL);
-                            //auto end = std::chrono::high_resolution_clock::now();
-                            //// std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;
-                            //region = encoded.getRegion();
-                            //recvtimes.push_back(std::chrono::duration_cast<realTime>(end - start));
-                            //// compressions.emplace_back( 100.0 * static_cast<float>(numBytes) / (tileSize * tileSize));
-                           
-                            //const box2i affectedDisplays = wallConfig.affectedDisplays(region);
-
-                            //// printf("region %i %i - %i %i displays %i %i - %i %i\n",
-                            ////         region.lower.x,
-                            ////         region.lower.y,
-                            ////         region.upper.x,
-                            ////         region.upper.y,
-                            ////         affectedDisplays.lower.x,
-                            ////         affectedDisplays.lower.y,
-                            ////         affectedDisplays.upper.x,
-                            ////         affectedDisplays.upper.y);
-
-                            //for (int dy=affectedDisplays.lower.y;dy<affectedDisplays.upper.y;dy++)
-                                //for (int dx=affectedDisplays.lower.x;dx<affectedDisplays.upper.x;dx++) {
-                                    //int toRank = wallConfig.rankOfDisplay(vec2i(dx,dy));
-                                    //MPI_CALL(Send(encoded.data, encoded.numBytes, MPI_BYTE, toRank, myTileID, displayGroup.comm));
-                            //}
-
-                            //numWrittenThisFrame += region.size().product();
-                            //numBytesAfterCompression += encoded.numBytes;
-                            
-                            //// printf("dispatch %i/%i\n",numWrittenThisFrame,numExpectedThisFrame);
-
-                            //if (numWrittenThisFrame == numExpectedThisFrame) {
-                                //// printf("Compression ratio = %d\n", numBytesAfterCompression ); 
-                                //// printf("#osp:dw(hn): head node has a full frame\n");
-                                //numWrittenThisFrame = 0;
-                                //numBytesAfterCompression = 0;
-                                //realTime sum_recv;
-                                //for(size_t i = 0; i < recvtimes.size(); i++){
-                                    //sum_recv += recvtimes[i];
-                                //}
-                                //recvTime.push_back(std::chrono::duration_cast<realTime>(sum_recv));
-                                //recvtimes.clear();
-                                //dispatchGroup.barrier();
-                                //// endFramePrint();
-                            //}
-
-                            //if (valread == 0){
-                                ////Somebody disconnected , get his details and print
-                                //getpeername(sd , (struct sockaddr*)&address , (socklen_t*)&addrlen);
-                                //printf("Host disconnected , ip %s , port %d \n" , inet_ntoa(address.sin_addr) , ntohs(address.sin_port));
-                                ////Close the socket and mark as 0 in list for reuse
-                                //close( sd );
-                                //client_socket[i] = 0;
-                                //endFramePrint();
-
-                            //}
-                    //}
-                }
-            }
+                } // end of while
+            //    for( int  s = 0; s  < clientNum; s++ ){
+            //                     std::cout << "join thread " << std::endl;
+            //                     recvThreads[s].join();
+            //                 } 
             outwardFacingGroup.barrier();
             return outwardFacingGroup;
-            //}
         }
 
         void Server::allocateFrameBuffers()

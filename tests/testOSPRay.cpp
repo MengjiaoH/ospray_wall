@@ -201,7 +201,7 @@ namespace ospray{
             using Stats = pico_bench::Statistics<Time>;
 
              //Render
-            while(frameID < 50){
+            while(1){
                frameID++;
                auto lastTime = std::chrono::high_resolution_clock::now();
                ospRenderFrame(pixelOP_framebuffer, renderer, OSP_FB_COLOR);
@@ -209,7 +209,7 @@ namespace ospray{
                auto thisTime = std::chrono::high_resolution_clock::now();
                Time t = thisTime - lastTime;
                //renderTime.push_back(std::chrono::duration_cast<Time>(thisTime - lastTime));
-               std::cout << "Frame Rate  = " << 1.f / t.count() * 1000  << std::endl;
+               //std::cout << "Frame Rate  = " << 1.f / t.count() * 1000  << std::endl;
                //renderTime.push_back(std::chrono::duration_cast<Time>(thisTime - lastTime));
                 // std::cout << "Frame Rate  = " << 1.f / (thisTime - lastTime) << std::endl;
 

@@ -101,11 +101,11 @@ namespace ospray {
                     }
                     decompressionTime.push_back(std::chrono::duration_cast<realTime>(sumTime));
                     decompressiontimes.clear();
-                    if(!decompressionTime.empty()){
-                        Stats decompressionStats(decompressionTime);
-                        decompressionStats.time_suffix = "ms";
-                        std::cout  << "Decompression time statistics:\n" << decompressionStats << "\n";
-                    }
+                    //if(!decompressionTime.empty()){
+                        //Stats decompressionStats(decompressionTime);
+                        //decompressionStats.time_suffix = "ms";
+                        //std::cout  << "Decompression time statistics:\n" << decompressionStats << "\n";
+                    //}
 
                     DW_DBG(printf("#osp:dw(%i/%i) barrier'ing on %i/%i\n",
                                   displayGroup.rank,displayGroup.size,

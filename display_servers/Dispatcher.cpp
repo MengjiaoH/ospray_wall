@@ -36,15 +36,16 @@ namespace ospray {
 
    /* [>! the dispatcher that receives tiles on the head node, and then
       dispatches them to the actual tile receivers */
-    void Server::runDispatcher(int socket_index)
+    void Server::runDispatcher(int socket_index, fd_set readfds)
     {
 
         size_t numWrittenThisFrame = 0;
         size_t numExpectedThisFrame = wallConfig.totalPixelCount();
-        while (1) {
-            //  std::cout << " ========== start receiving tiles ========== " << std::endl;
-            sd = client_socket[socket_index];
-
+         while (1) {
+            //std::cout << " ========== start receiving tiles ========== " << std::endl;
+            //sd = client_socket[socket_index];
+            sd = socket_index;
+            std::cout << "socket " << sd << " is set " << FD_ISSET( sd , &readfds) << std::endl;
             if (FD_ISSET( sd , &readfds)){
                 static std::atomic<int> tileID;
                 int myTileID = tileID++;
@@ -52,13 +53,16 @@ namespace ospray {
                 // receive the data size of compressed tile
                 int numBytes = 0;
                 auto start = std::chrono::high_resolution_clock::now();
+
                 int dataSize = recv(sd, &numBytes, sizeof(int), 0 );
-                // std::cout << " Compressed tile would have " << numBytes << " bytes" << std::endl;
+                std::lock_guard<std::mutex> lock(recvMutex);
+                std::cout << " Compressed tile would have " << numBytes << " bytes" << std::endl;
                 encoded.numBytes = numBytes;
                 encoded.data = new unsigned char[encoded.numBytes];
                 box2i region;
-                std::lock_guard<std::mutex> lock(recvMutex);
+                // std::lock_guard<std::mutex> lock(recvMutex);
                 valread = recv( sd , encoded.data, encoded.numBytes, MSG_WAITALL);
+
                 auto end = std::chrono::high_resolution_clock::now();
                 // std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;
                 region = encoded.getRegion();
@@ -67,26 +71,26 @@ namespace ospray {
                             
                 const box2i affectedDisplays = wallConfig.affectedDisplays(region);
 
-                // printf("region %i %i - %i %i displays %i %i - %i %i\n",
-                //         region.lower.x,
-                //         region.lower.y,
-                //         region.upper.x,
-                //         region.upper.y,
-                //         affectedDisplays.lower.x,
-                //         affectedDisplays.lower.y,
-                //         affectedDisplays.upper.x,
-                //         affectedDisplays.upper.y);
+                printf("region %i %i - %i %i displays %i %i - %i %i\n",
+                        region.lower.x,
+                        region.lower.y,
+                        region.upper.x,
+                        region.upper.y,
+                        affectedDisplays.lower.x,
+                        affectedDisplays.lower.y,
+                        affectedDisplays.upper.x,
+                        affectedDisplays.upper.y);
 
                 for (int dy=affectedDisplays.lower.y;dy<affectedDisplays.upper.y;dy++)
                     for (int dx=affectedDisplays.lower.x;dx<affectedDisplays.upper.x;dx++) {
                         int toRank = wallConfig.rankOfDisplay(vec2i(dx,dy));
-                        MPI_CALL(Send(encoded.data, encoded.numBytes, MPI_BYTE, toRank, myTileID, displayGroup.comm));
+                 //       MPI_CALL(Send(encoded.data, encoded.numBytes, MPI_BYTE, toRank, myTileID, displayGroup.comm));
                 }
 
                 numWrittenThisFrame += region.size().product();
                 numBytesAfterCompression += encoded.numBytes;
                             
-                // printf("dispatch %i/%i\n",numWrittenThisFrame,numExpectedThisFrame);
+                //printf("dispatch %i/%i\n",numWrittenThisFrame,numExpectedThisFrame);
 
                 if (numWrittenThisFrame == numExpectedThisFrame) {
                     // printf("Compression ratio = %d\n", numBytesAfterCompression ); 
@@ -100,6 +104,7 @@ namespace ospray {
                     recvTime.push_back(std::chrono::duration_cast<realTime>(sum_recv));
                     recvtimes.clear();
                     dispatchGroup.barrier();
+                    recvThreads[socket_index].join();
                     // endFramePrint();
                 }
 
@@ -110,11 +115,12 @@ namespace ospray {
                     //Close the socket and mark as 0 in list for reuse
                     close( sd );
                     client_socket[socket_index] = 0;
-                    endFramePrint();
+                    //endFramePrint();
+                    // recvThreads[socket_index].join();
                 }
             } // end of if(FD_ISSET)
 
-        }// end of while
+         }// end of while
         
     }// end of runDispatcher
     
