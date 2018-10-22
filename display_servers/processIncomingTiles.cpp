@@ -17,6 +17,8 @@ namespace ospray {
     using std::cout; 
     using std::endl;
     using std::flush;
+                extern size_t numWrittenThisFrame;
+        extern std::mutex addMutex;
 
     /*! the code that actually receives the tiles, decompresses
       them, and writes them into the current (write-)frame buffer */

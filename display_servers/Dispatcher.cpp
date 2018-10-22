@@ -33,6 +33,8 @@ namespace ospray {
     using std::cout; 
     using std::endl;
     using std::flush;
+            extern size_t numWrittenThisFrame;
+        extern std::mutex addMutex;
 
    /* [>! the dispatcher that receives tiles on the head node, and then
       dispatches them to the actual tile receivers */
@@ -81,15 +83,15 @@ namespace ospray {
     
                     const box2i affectedDisplays = wallConfig.affectedDisplays(region);
 
-                    // printf("region %i %i - %i %i displays %i %i - %i %i\n",
-                    //         region.lower.x,
-                    //         region.lower.y,
-                    //         region.upper.x,
-                    //         region.upper.y,
-                    //         affectedDisplays.lower.x,
-                    //         affectedDisplays.lower.y,
-                    //         affectedDisplays.upper.x,
-                    //         affectedDisplays.upper.y);
+                    printf("region %i %i - %i %i displays %i %i - %i %i\n",
+                            region.lower.x,
+                            region.lower.y,
+                            region.upper.x,
+                            region.upper.y,
+                            affectedDisplays.lower.x,
+                            affectedDisplays.lower.y,
+                            affectedDisplays.upper.x,
+                            affectedDisplays.upper.y);
 
                     for (int dy=affectedDisplays.lower.y;dy<affectedDisplays.upper.y;dy++)
                         for (int dx=affectedDisplays.lower.x;dx<affectedDisplays.upper.x;dx++) {
@@ -97,15 +99,20 @@ namespace ospray {
                             MPI_CALL(Send(encoded.data, encoded.numBytes, MPI_BYTE, toRank, myTileID, displayGroup.comm));
                     }
 
+                    // std::lock_guard<std::mutex> lock(addMutex);
+                    addMutex.lock();
                     numWrittenThisFrame += region.size().product();
+                    addMutex.unlock();
                     numBytesAfterCompression += encoded.numBytes;
                     
-                    // printf("socket %i  dispatch %i/%i\n", sd, numWrittenThisFrame,numExpectedThisFrame);
+                    printf("socket %i  dispatch %i/%i\n", sd, numWrittenThisFrame,numExpectedThisFrame);
 
                     if (numWrittenThisFrame == numExpectedThisFrame) {
                         // printf("Compression ratio = %d\n", numBytesAfterCompression ); 
                         // printf("#osp:dw(hn): head node has a full frame\n");
+                        addMutex.lock();
                         numWrittenThisFrame = 0;
+                        addMutex.unlock();
                         numBytesAfterCompression = 0;
                         // realTime sum_recv;
                         // for(size_t i = 0; i < recvtimes.size(); i++){

@@ -20,6 +20,8 @@ namespace ospray {
         class Server{
             public:
                 static Server *singleton;
+                /*! total number of pixels already written this frame */
+
                 Server(const int &portNum,
                        const mpicommon::Group &me,
                        const mpicommon::Group &displayGroup,
@@ -68,8 +70,6 @@ namespace ospray {
                 const DisplayCallback displayCallback;
                 void *const objectForCallback;
 
-                /*! total number of pixels already written this frame */
-                size_t numWrittenThisFrame;
                 /*! total number of pixels we have to write this frame until we
                     have a full frame buffer */
                 size_t numExpectedThisFrame;

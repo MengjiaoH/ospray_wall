@@ -7,6 +7,10 @@ namespace ospray{
     namespace dw{
         Server *Server::singleton = NULL;
         std::thread Server::commThread;
+        // extern size_t numWrittenThisFrame;
+        // extern std::mutex addMutex;
+        // size_t Server::numWrittenThisFrame = 0;
+        // std::mutex Server::addMutex;
 
         Server::Server(const int &portNum,
                        const mpicommon::Group &me,
@@ -21,8 +25,7 @@ namespace ospray{
             :portNum(portNum), me(me), displayGroup(displayGroup),
              dispatchGroup(dispatchGroup), wallConfig(wallConfig),
              displayCallback(displayCallback), objectForCallback(objectForCallback),
-             hasHeadNode(hasHeadNode), ppn(ppn), 
-             numWrittenThisFrame(0), numExpectedThisFrame(wallConfig.totalPixels().product()),
+             hasHeadNode(hasHeadNode), ppn(ppn), numExpectedThisFrame(wallConfig.totalPixels().product()),
              recv_l(NULL), recv_r(NULL), disp_l(NULL), disp_r(NULL), clientNum(clientNum)
         {
             commThread = std::thread([&](){
@@ -54,6 +57,7 @@ namespace ospray{
                     waitForConnection(portNum);
                     // while(1){
                         for(int i = 0; i < clientNum; i++){
+                            std::cout << "thread #" << i << std::endl;
                             recvThread[i] = std::thread([i, this](){
                                 runDispatcher(i);
                             });
@@ -169,8 +173,9 @@ namespace ospray{
                         c++;
                     }
                 }
+                std::cout << "c = " << c << " client num = " << clientNum << std::endl;
 
-                if(c == clientNum ){
+                if(c == clientNum - 1){
                     break;
                 }
             } // while
