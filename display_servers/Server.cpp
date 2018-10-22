@@ -7,7 +7,6 @@ namespace ospray{
     namespace dw{
         Server *Server::singleton = NULL;
         std::thread Server::commThread;
-        std::thread Server::recvThread[10];
 
         Server::Server(const int &portNum,
                        const mpicommon::Group &me,
@@ -53,7 +52,7 @@ namespace ospray{
                 // =======================================================
                 if(world.rank == 0){
                     waitForConnection(portNum);
-                    while(1){
+                    // while(1){
                         for(int i = 0; i < clientNum; i++){
                             std::cout << "i = " << i << std::endl;
                             recvThread[i] = std::thread([&](){
@@ -64,16 +63,7 @@ namespace ospray{
                             std::cout << "join " << i << std::endl;
                             recvThread[i].join();
                         }
-                    }
-                        for(int i = 0; i < clientNum; i++){
-                            std::cout << "i = " << i << std::endl;
-                            recvThread[i] = std::thread([&](){
-                                runDispatcher(i);
-                            });
-                        }
-                        for(int i = 0; i < clientNum; i++){
-                            recvThread[i].join();
-                        }
+                    // }
                     // runDispatcher();
                 }else{
                     // =======================================================

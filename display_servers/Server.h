@@ -52,7 +52,7 @@ namespace ospray {
                 int clientNum;
 
                 static std::thread commThread;
-                static std::thread recvThread[10];
+                std::thread recvThread[10];
                 /*! group that contails ALL display service procs, including the
                     head node (if applicable) */
                 const mpicommon::Group me;

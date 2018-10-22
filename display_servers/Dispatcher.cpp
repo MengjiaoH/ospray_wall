@@ -60,7 +60,7 @@ namespace ospray {
                 // std::cout << "file set " << FD_ISSET( sd , &readfds) << " on socket #" << sd << std::endl;
                  if (FD_ISSET( sd , &readfds))
                  {
-                    // std::cout << "socket = " << sd <<std::endl;
+                    std::cout << "socket index = " << socket_index <<std::endl;
                     static std::atomic<int> tileID;
                     int myTileID = tileID++;
                     CompressedTile encoded;
