@@ -54,14 +54,12 @@ namespace ospray{
                     waitForConnection(portNum);
                     // while(1){
                         for(int i = 0; i < clientNum; i++){
-                            std::cout << "i = " << i << std::endl;
-                            recvThread[i] = std::thread([&](){
+                            recvThread[i] = std::thread([i, this](){
                                 runDispatcher(i);
                             });
                         }
                         for(int i = 0; i < clientNum; i++){
-                            std::cout << "join " << i << std::endl;
-                            recvThread[i].join();
+                            recvThread[i].detach();
                         }
                     // }
                     // runDispatcher();
@@ -160,9 +158,9 @@ namespace ospray{
                     printf("New connection , socket fd is %d , ip is : %s , port : %d \n" , new_socket , inet_ntoa(address.sin_addr) , ntohs
                             (address.sin_port));
                     //add new socket to array of sockets 
-                    for (int i = 0; i < max_clients; i++)  {  
+                    for (int i = 0; i < clientNum; i++)  {  
                         //if position is empty 
-                        if( client_socket[i] == 0 ) 
+                        if( client_socket[i] == 0) 
                         {
                             client_socket[i] = new_socket;
                             printf("Adding to list of sockets as %d\n" , i);

@@ -40,7 +40,7 @@ namespace ospray {
     {
         size_t numWrittenThisFrame = 0;
         size_t numExpectedThisFrame = wallConfig.totalPixelCount();
-
+        // std::cout << "socket index = " << socket_index <<std::endl;
         while (1) 
         {
             FD_ZERO(&readfds);
@@ -48,19 +48,19 @@ namespace ospray {
             // for(int i = 0; i < clientNum; i++)
             // {
                 sd = client_socket[socket_index];
-                // if(sd > max_sd){
-                //     max_sd = sd;
-                // }
+                if(sd > max_sd){
+                    max_sd = sd;
+                }
                 FD_SET(sd, &readfds);
-                int activity = select(max_sd + 3 , &readfds, NULL, NULL, NULL);
+                int activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
 
                 if((activity < 0) && (errno != EINTR)){
                     printf("select error");
                 }
-                // std::cout << "file set " << FD_ISSET( sd , &readfds) << " on socket #" << sd << std::endl;
+                std::cout << "file set " << FD_ISSET( sd , &readfds) << " on socket #" << sd << std::endl;
                  if (FD_ISSET( sd , &readfds))
                  {
-                    std::cout << "socket index = " << socket_index <<std::endl;
+                    
                     static std::atomic<int> tileID;
                     int myTileID = tileID++;
                     CompressedTile encoded;
@@ -72,7 +72,6 @@ namespace ospray {
                     encoded.numBytes = numBytes;
                     encoded.data = new unsigned char[encoded.numBytes];
                     box2i region;
-                    std::lock_guard<std::mutex> lock(recvMutex);
                     valread = recv( sd , encoded.data, encoded.numBytes, MSG_WAITALL);
                     auto end = std::chrono::high_resolution_clock::now();
                     //std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;
