@@ -73,6 +73,8 @@ namespace ospray {
                 /*! total number of pixels we have to write this frame until we
                     have a full frame buffer */
                 size_t numExpectedThisFrame;
+                size_t numHasWritten;
+                size_t numExpectedPerDisplay;
                 /*! @{ the four pixel arrays for left/right eye and
                     receive/display buffers, respectively */
                 uint32_t *recv_l, *recv_r, *disp_l, *disp_r;

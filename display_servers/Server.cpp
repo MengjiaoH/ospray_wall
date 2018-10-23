@@ -7,6 +7,8 @@ namespace ospray{
     namespace dw{
         Server *Server::singleton = NULL;
         std::thread Server::commThread;
+        std::mutex commThreadIsReady;
+        std::mutex canStartProcessing;
         // extern size_t numWrittenThisFrame;
         // extern std::mutex addMutex;
         // size_t Server::numWrittenThisFrame = 0;
@@ -26,15 +28,20 @@ namespace ospray{
              dispatchGroup(dispatchGroup), wallConfig(wallConfig),
              displayCallback(displayCallback), objectForCallback(objectForCallback),
              hasHeadNode(hasHeadNode), ppn(ppn), numExpectedThisFrame(wallConfig.totalPixels().product()),
-             recv_l(NULL), recv_r(NULL), disp_l(NULL), disp_r(NULL), clientNum(clientNum)
+             numHasWritten(0), numExpectedPerDisplay( wallConfig.displayPixelCount()), recv_l(NULL), recv_r(NULL), disp_l(NULL), disp_r(NULL), clientNum(clientNum)
         {
-            commThread = std::thread([&](){
+            // commThreadIsReady.lock();
+            // canStartProcessing.lock();
+            commThread = std::thread([this](){
                     setupCommunication();
             });
+
+            // commThreadIsReady.lock();
 
             if(hasHeadNode && me.rank == 0){
                 commThread.join();
             }
+            // canStartProcessing.unlock();
         }
 
         Server::~Server(){
@@ -55,7 +62,7 @@ namespace ospray{
                 // =======================================================
                 if(world.rank == 0){
                     waitForConnection(portNum);
-                    // while(1){
+                    while(1){
                         for(int i = 0; i < clientNum; i++){
                             std::cout << "thread #" << i << std::endl;
                             recvThread[i] = std::thread([i, this](){
@@ -63,15 +70,15 @@ namespace ospray{
                             });
                         }
                         for(int i = 0; i < clientNum; i++){
-                            recvThread[i].detach();
+                            recvThread[i].join();
                         }
-                    // }
+                    }
                     // runDispatcher();
                 }else{
                     // =======================================================
                     // TILE RECEIVER
                     // =======================================================
-                     //canStartProcessing.lock();
+                    //  canStartProcessing.lock();
                     mpicommon::Group incomingTiles = dispatchGroup;
                     processIncomingTiles(incomingTiles);
                 }
@@ -168,11 +175,13 @@ namespace ospray{
                         {
                             client_socket[i] = new_socket;
                             printf("Adding to list of sockets as %d\n" , i);
+                            c = i;
                             break;
                         }
-                        c++;
+                        
                     }
                 }
+
                 std::cout << "c = " << c << " client num = " << clientNum << std::endl;
 
                 if(c == clientNum - 1){

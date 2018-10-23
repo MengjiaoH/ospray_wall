@@ -70,7 +70,7 @@ namespace ospray{
             {
                 printf("\nConnection Failed \n");
             }
-
+            std::cout << "sock " << sock << std::endl;
             me.barrier();
         }// end of establishConnection
 
@@ -136,33 +136,36 @@ namespace ospray{
             //! Send how large the compressed data
             // TODO: Measure sending time
             auto start = std::chrono::high_resolution_clock::now();
-            std::lock_guard<std::mutex> lock(sendMutex);
-            int compressedData = send(sock, &encoded.numBytes, sizeof(int), MSG_MORE);
-            //std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << compressedData << std::endl;
+            // sendMutex.lock();
+            // std::lock_guard<std::mutex> lock(sendMutex);
+            // int compressedData = send(sock, &encoded.numBytes, sizeof(int), MSG_MORE);
+            // std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << compressedData << std::endl;
             //! Send compressed tile
             int out = send(sock, encoded.data, encoded.numBytes, 0);
+            std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << out << std::endl;
+            // sendMutex.unlock();
 
-            auto end = std::chrono::high_resolution_clock::now();
-            sendtimes.push_back(std::chrono::duration_cast<realTime>(end - start));
-            box2i region = encoded.getRegion();
-            const box2i affectedDisplays = wallConfig ->affectedDisplays(region);
-            numWrittenThisFrame += region.size().product();
-            if(numWrittenThisFrame == numExpectedThisFrame){
-                numWrittenThisFrame = 0;
-                realTime sum_send, sum_compression;
-                for(size_t i = 0; i < sendtimes.size(); i++){
-                    sum_send += sendtimes[i];
-                }
-                sendTime.push_back(std::chrono::duration_cast<realTime>(sum_send));
+            // auto end = std::chrono::high_resolution_clock::now();
+            // sendtimes.push_back(std::chrono::duration_cast<realTime>(end - start));
+            // box2i region = encoded.getRegion();
+            // const box2i affectedDisplays = wallConfig ->affectedDisplays(region);
+            // numWrittenThisFrame += region.size().product();
+            // if(numWrittenThisFrame == numExpectedThisFrame){
+            //     numWrittenThisFrame = 0;
+            //     // realTime sum_send, sum_compression;
+            //     // for(size_t i = 0; i < sendtimes.size(); i++){
+            //     //     sum_send += sendtimes[i];
+            //     // }
+            //     // sendTime.push_back(std::chrono::duration_cast<realTime>(sum_send));
 
-                for(size_t i = 0; i < compressiontimes.size(); i++){
-                      sum_compression += compressiontimes[i];
-                    }
-                compressionTime.push_back(std::chrono::duration_cast<realTime>(sum_compression));
+            //     // for(size_t i = 0; i < compressiontimes.size(); i++){
+            //     //       sum_compression += compressiontimes[i];
+            //     //     }
+            //     // compressionTime.push_back(std::chrono::duration_cast<realTime>(sum_compression));
 
-                compressiontimes.clear();
-                sendtimes.clear();
-            }
+            //     // compressiontimes.clear();
+            //     // sendtimes.clear();
+            // }
             //std::cout << " Send tile ID = " << myTileID << " contains " << encoded.numBytes << " bytes and send " << out << " bytes" << std::endl;
 
             // ## Debug 

@@ -17,8 +17,6 @@ namespace ospray {
     using std::cout; 
     using std::endl;
     using std::flush;
-                extern size_t numWrittenThisFrame;
-        extern std::mutex addMutex;
 
     /*! the code that actually receives the tiles, decompresses
       them, and writes them into the current (write-)frame buffer */
@@ -87,16 +85,17 @@ namespace ospray {
 #if THREADED_RECV
                   std::lock_guard<std::mutex> lock(displayMutex);
 #endif
-                  numWrittenThisFrame += numWritten;
-                  DW_DBG(printf("written %li / %li\n",numWrittenThisFrame,numExpectedThisFrame));
-                  if (numWrittenThisFrame == numExpectedThisFrame) {
+                  numHasWritten += numWritten;
+                  DW_DBG(printf("written %li / %li\n",numHasWritten,numExpectedPerDisplay));
+                  printf("written %li / %li\n",numHasWritten,numExpectedPerDisplay);
+                  if (numHasWritten == numExpectedPerDisplay) {
 
                     //printf("display %i/%i has a full frame!\n",displayGroup.rank,displayGroup.size);
                    // need barrier here! if not, some images saved inside callback function are wrong. 
                     // displayGroup.barrier();
                     // printf("display %i/%i has a full frame!\n", displayGroup.rank,displayGroup.size);
                     //need barrier here! if not, some images saved inside callback function are wrong.
-                    displayGroup.barrier();
+                    // displayGroup.barrier();
                     realTime sumTime;
                     for(size_t i = 0; i < decompressiontimes.size(); i++){
                       sumTime += decompressiontimes[i];
@@ -118,8 +117,8 @@ namespace ospray {
                     displayCallback(recv_l,recv_r,objectForCallback);
 
                     // reset counter
-                    numWrittenThisFrame = 0;
-                    numExpectedThisFrame = wallConfig.displayPixelCount();
+                    numHasWritten = 0;
+                    // numExpectedPerDisplay = wallConfig.displayPixelCount();
                     // and switch the in/out buffers
                     std::swap(recv_l,disp_l);
                     std::swap(recv_r,disp_r);

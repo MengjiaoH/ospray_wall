@@ -33,14 +33,15 @@ namespace ospray {
     using std::cout; 
     using std::endl;
     using std::flush;
-            extern size_t numWrittenThisFrame;
-        extern std::mutex addMutex;
+    
+    extern size_t numWrittenThisFrame;
+    extern std::mutex addMutex;
 
    /* [>! the dispatcher that receives tiles on the head node, and then
       dispatches them to the actual tile receivers */
     void Server::runDispatcher(int socket_index)
     {
-        size_t numWrittenThisFrame = 0;
+        // size_t numWrittenThisFrame = 0;
         size_t numExpectedThisFrame = wallConfig.totalPixelCount();
         // std::cout << "socket index = " << socket_index <<std::endl;
         while (1) 
@@ -59,28 +60,26 @@ namespace ospray {
                 if((activity < 0) && (errno != EINTR)){
                     printf("select error");
                 }
-                std::cout << "file set " << FD_ISSET( sd , &readfds) << " on socket #" << sd << std::endl;
                  if (FD_ISSET( sd , &readfds))
                  {
-                    
+                    std::cout << "file set " << FD_ISSET( sd , &readfds) << " on socket #" << sd << std::endl;
                     static std::atomic<int> tileID;
                     int myTileID = tileID++;
                     CompressedTile encoded;
                     // receive the data size of compressed tile
                     int numBytes = 0;
                     auto start = std::chrono::high_resolution_clock::now();
-                    int dataSize = recv(sd, &numBytes, sizeof(int), 0);
+                    // int dataSize = recv(sd, &numBytes, sizeof(int), MSG_MORE);
                     // std::cout << " Compressed tile would have " << numBytes << " bytes" << std::endl;
-                    encoded.numBytes = numBytes;
+                    encoded.numBytes = 256 * 256 * 4;
                     encoded.data = new unsigned char[encoded.numBytes];
-                    box2i region;
                     valread = recv( sd , encoded.data, encoded.numBytes, MSG_WAITALL);
+
                     auto end = std::chrono::high_resolution_clock::now();
-                    //std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;
-                    region = encoded.getRegion();
+                    std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;
+                    const box2i region = encoded.getRegion();
                     recvtimes.push_back(std::chrono::duration_cast<realTime>(end - start));
                     compressions.emplace_back( 100.0 * static_cast<float>(numBytes) / (tileSize * tileSize));
-    
                     const box2i affectedDisplays = wallConfig.affectedDisplays(region);
 
                     printf("region %i %i - %i %i displays %i %i - %i %i\n",
@@ -103,7 +102,7 @@ namespace ospray {
                     addMutex.lock();
                     numWrittenThisFrame += region.size().product();
                     addMutex.unlock();
-                    numBytesAfterCompression += encoded.numBytes;
+                    // numBytesAfterCompression += encoded.numBytes;
                     
                     printf("socket %i  dispatch %i/%i\n", sd, numWrittenThisFrame,numExpectedThisFrame);
 
@@ -113,7 +112,7 @@ namespace ospray {
                         addMutex.lock();
                         numWrittenThisFrame = 0;
                         addMutex.unlock();
-                        numBytesAfterCompression = 0;
+                        // numBytesAfterCompression = 0;
                         // realTime sum_recv;
                         // for(size_t i = 0; i < recvtimes.size(); i++){
                         //     sum_recv += recvtimes[i];
