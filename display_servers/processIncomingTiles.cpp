@@ -87,41 +87,38 @@ namespace ospray {
 #endif
                   numHasWritten += numWritten;
                   DW_DBG(printf("written %li / %li\n",numHasWritten,numExpectedPerDisplay));
-                  printf("written %li / %li\n",numHasWritten,numExpectedPerDisplay);
                   if (numHasWritten == numExpectedPerDisplay) {
 
-                    //printf("display %i/%i has a full frame!\n",displayGroup.rank,displayGroup.size);
-                   // need barrier here! if not, some images saved inside callback function are wrong. 
-                    // displayGroup.barrier();
-                    // printf("display %i/%i has a full frame!\n", displayGroup.rank,displayGroup.size);
-                    //need barrier here! if not, some images saved inside callback function are wrong.
-                    // displayGroup.barrier();
-                    realTime sumTime;
-                    for(size_t i = 0; i < decompressiontimes.size(); i++){
-                      sumTime += decompressiontimes[i];
-                    }
-                    decompressionTime.push_back(std::chrono::duration_cast<realTime>(sumTime));
-                    decompressiontimes.clear();
-                    //if(!decompressionTime.empty()){
-                        //Stats decompressionStats(decompressionTime);
-                        //decompressionStats.time_suffix = "ms";
-                        //std::cout  << "Decompression time statistics:\n" << decompressionStats << "\n";
-                    //}
+                      //printf("display %i/%i has a full frame!\n",displayGroup.rank,displayGroup.size);
+                    // need barrier here! if not, some images saved inside callback function are wrong. 
+                      displayGroup.barrier();
+                      numHasWritten = 0;
+                      printf("display %i/%i has a full frame!\n", displayGroup.rank,displayGroup.size);
+                      //need barrier here! if not, some images saved inside callback function are wrong.
+                      realTime sumTime;
+                      for(size_t i = 0; i < decompressiontimes.size(); i++){
+                        sumTime += decompressiontimes[i];
+                      }
+                      decompressionTime.push_back(std::chrono::duration_cast<realTime>(sumTime));
+                      decompressiontimes.clear();
+                      //if(!decompressionTime.empty()){
+                          //Stats decompressionStats(decompressionTime);
+                          //decompressionStats.time_suffix = "ms";
+                          //std::cout  << "Decompression time statistics:\n" << decompressionStats << "\n";
+                      //}
+                      // displayGroup.barrier();
+                      DW_DBG(printf("#osp:dw(%i/%i) barrier'ing on %i/%i\n",
+                                    displayGroup.rank,displayGroup.size,
+                                    outside.rank,outside.size));
+                      DW_DBG(printf("#osp:dw(%i/%i): DISPLAYING\n",
+                                    displayGroup.rank,displayGroup.size));
+                      displayCallback(recv_l,recv_r,objectForCallback);
 
-                    DW_DBG(printf("#osp:dw(%i/%i) barrier'ing on %i/%i\n",
-                                  displayGroup.rank,displayGroup.size,
-                                  outside.rank,outside.size));
-                    DW_DBG(printf("#osp:dw(%i/%i): DISPLAYING\n",
-                                  displayGroup.rank,displayGroup.size));
-                    //MPI_CALL(Barrier(outside.comm));
-                    displayCallback(recv_l,recv_r,objectForCallback);
-
-                    // reset counter
-                    numHasWritten = 0;
-                    // numExpectedPerDisplay = wallConfig.displayPixelCount();
-                    // and switch the in/out buffers
-                    std::swap(recv_l,disp_l);
-                    std::swap(recv_r,disp_r);
+                      // reset counter
+                      // numExpectedPerDisplay = wallConfig.displayPixelCount();
+                      // and switch the in/out buffers
+                      std::swap(recv_l,disp_l);
+                      std::swap(recv_r,disp_r);
                     // Correct !
                   }
                 }

@@ -36,7 +36,7 @@ namespace ospray {
                 void setupCommunication(); 
                 void processIncomingTiles(mpicommon::Group &ourside);
                 void allocateFrameBuffers();
-                void runDispatcher(int socket_index);
+                void runDispatcher();
             private:
                 const int portNum;
                 
@@ -54,7 +54,7 @@ namespace ospray {
                 int clientNum;
 
                 static std::thread commThread;
-                std::thread recvThread[10];
+                std::thread recvThread[20];
                 /*! group that contails ALL display service procs, including the
                     head node (if applicable) */
                 const mpicommon::Group me;

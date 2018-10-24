@@ -137,12 +137,12 @@ namespace ospray{
             // TODO: Measure sending time
             auto start = std::chrono::high_resolution_clock::now();
             // sendMutex.lock();
-            // std::lock_guard<std::mutex> lock(sendMutex);
-            // int compressedData = send(sock, &encoded.numBytes, sizeof(int), MSG_MORE);
+            std::lock_guard<std::mutex> lock(sendMutex);
+            int compressedData = send(sock, &encoded.numBytes, sizeof(int), MSG_MORE);
             // std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << compressedData << std::endl;
             //! Send compressed tile
             int out = send(sock, encoded.data, encoded.numBytes, 0);
-            std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << out << std::endl;
+            // std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << out << std::endl;
             // sendMutex.unlock();
 
             // auto end = std::chrono::high_resolution_clock::now();

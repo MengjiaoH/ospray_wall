@@ -62,18 +62,18 @@ namespace ospray{
                 // =======================================================
                 if(world.rank == 0){
                     waitForConnection(portNum);
-                    while(1){
-                        for(int i = 0; i < clientNum; i++){
-                            std::cout << "thread #" << i << std::endl;
-                            recvThread[i] = std::thread([i, this](){
-                                runDispatcher(i);
-                            });
-                        }
-                        for(int i = 0; i < clientNum; i++){
-                            recvThread[i].join();
-                        }
-                    }
-                    // runDispatcher();
+                    // while(1){
+                    //     for(int i = 0; i < clientNum; i++){
+                    //         std::cout << "thread #" << i << std::endl;
+                    //         recvThread[i] = std::thread([i, this](){
+                    //             runDispatcher(i);
+                    //         });
+                    //     }
+                    //     for(int i = 0; i < clientNum; i++){
+                    //         recvThread[i].join();
+                    //     }
+                    // }
+                    runDispatcher();
                 }else{
                     // =======================================================
                     // TILE RECEIVER
@@ -181,9 +181,6 @@ namespace ospray{
                         
                     }
                 }
-
-                std::cout << "c = " << c << " client num = " << clientNum << std::endl;
-
                 if(c == clientNum - 1){
                     break;
                 }
