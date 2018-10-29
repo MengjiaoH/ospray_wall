@@ -24,6 +24,9 @@ SOFTWARE.
 
 #include "ospcommon/box.h"
 #include <string>
+#include <vector>
+#include <math.h> 
+
 
 // macro to turn on/off debugging printouts for the display wall
 #define DW_DBG(a) /* nothing */
@@ -93,6 +96,7 @@ namespace ospray {
           region of pixels (ie, that together are guaranteed to cover
           that pixel region */
       box2i  affectedDisplays(const box2i &pixelRegion) const;
+      std::vector<int> calculateNumPixelsPerClient(int clientNum) const;
 
       void   print() const;
       inline bool doStereo() const { return stereo; }

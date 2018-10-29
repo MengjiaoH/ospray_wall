@@ -52,6 +52,8 @@ namespace ospray {
 
                 const int ppn;
                 int clientNum;
+                std::vector<int> numPixelsPerClient;
+                std::vector<int> numWrittenThisClient;
 
                 static std::thread commThread;
                 std::thread recvThread[20];

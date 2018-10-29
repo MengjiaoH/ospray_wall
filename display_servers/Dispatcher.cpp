@@ -34,8 +34,8 @@ namespace ospray {
     using std::endl;
     using std::flush;
     
-    extern size_t numWrittenThisFrame;
-    extern std::mutex addMutex;
+    static size_t numWrittenThisFrame = 0;
+    static std::mutex addMutex;
 
    /* [>! the dispatcher that receives tiles on the head node, and then
       dispatches them to the actual tile receivers */
@@ -54,7 +54,7 @@ namespace ospray {
                 if(sd > max_sd){
                     max_sd = sd;
                 }
-                recvThread[i] = std::thread([sd, this](){
+                recvThread[i] = std::thread([i, sd, this](){
                     FD_ZERO(&readfds);
                     FD_SET(sd, &readfds);
                     int activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
@@ -63,68 +63,77 @@ namespace ospray {
                     }
                     if (FD_ISSET(sd , &readfds))
                     {
-                        // std::cout << "file set " << FD_ISSET( sd , &readfds) << " on socket #" << sd << std::endl;
-                        static std::atomic<int> tileID;
-                        int myTileID = tileID++;
-                        CompressedTile encoded;
-                        // receive the data size of compressed tile
-                        int numBytes = 0;
-                        auto start = std::chrono::high_resolution_clock::now();
-
-                        int dataSize = recv(sd, &numBytes, sizeof(int), MSG_MORE);
-                        // std::cout << " Compressed tile would have " << numBytes << " bytes" << std::endl;
-                        encoded.numBytes = numBytes;
-                        encoded.data = new unsigned char[encoded.numBytes];
-                        valread = recv( sd , encoded.data, encoded.numBytes, MSG_WAITALL);
-
-                        auto end = std::chrono::high_resolution_clock::now();
-                        // std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;
-                        const box2i region = encoded.getRegion();
-                        recvtimes.push_back(std::chrono::duration_cast<realTime>(end - start));
-                        compressions.emplace_back( 100.0 * static_cast<float>(numBytes) / (tileSize * tileSize));
-                        const box2i affectedDisplays = wallConfig.affectedDisplays(region);
-
-                        printf("region %i %i - %i %i displays %i %i - %i %i\n",
-                                region.lower.x,
-                                region.lower.y,
-                                region.upper.x,
-                                region.upper.y,
-                                affectedDisplays.lower.x,
-                                affectedDisplays.lower.y,
-                                affectedDisplays.upper.x,
-                                affectedDisplays.upper.y);
-
-                        for (int dy=affectedDisplays.lower.y;dy<affectedDisplays.upper.y;dy++)
-                            for (int dx=affectedDisplays.lower.x;dx<affectedDisplays.upper.x;dx++) {
-                                int toRank = wallConfig.rankOfDisplay(vec2i(dx,dy));
-                                MPI_CALL(Send(encoded.data, encoded.numBytes, MPI_BYTE, toRank, myTileID, displayGroup.comm));
-                        }
-
-                        addMutex.lock();
-                        numWrittenThisFrame += region.size().product();
-                        addMutex.unlock();
-                        // numBytesAfterCompression += encoded.numBytes;
-                    
-                        printf("socket %i  dispatch %i/%i\n", sd, numWrittenThisFrame,numExpectedThisFrame);
-
-                        if (numWrittenThisFrame == numExpectedThisFrame)
-                        {
-                            // printf("Compression ratio = %d\n", numBytesAfterCompression ); 
-                            // printf("#osp:dw(hn): head node has a full frame\n");
+                        if(numWrittenThisClient[i] == numPixelsPerClient[i]){
+                            // barrier until all threads have data for one frame
                             dispatchGroup.barrier();
-                            addMutex.lock();
-                            numWrittenThisFrame = 0;
-                            addMutex.unlock();
-                            // numBytesAfterCompression = 0;
-                            // realTime sum_recv;
-                            // for(size_t i = 0; i < recvtimes.size(); i++){
-                            //     sum_recv += recvtimes[i];
-                            // }
-                            // recvTime.push_back(std::chrono::duration_cast<realTime>(sum_recv));
-                            // recvtimes.clear();
+                            if(numWrittenThisFrame != numExpectedThisFrame){
+                                addMutex.lock();
+                                numWrittenThisFrame += numWrittenThisClient[i];
+                                addMutex.unlock();
+                            }
+                            else{
+                                // printf("Compression ratio = %d\n", numBytesAfterCompression ); 
+                                // printf("#osp:dw(hn): head node has a full frame\n");
+                                addMutex.lock();
+                                numWrittenThisFrame = 0;
+                                addMutex.unlock();
+                                dispatchGroup.barrier();
+                                // numBytesAfterCompression = 0;
+                                // realTime sum_recv;
+                                // for(size_t i = 0; i < recvtimes.size(); i++){
+                                //     sum_recv += recvtimes[i];
+                                // }
+                                // recvTime.push_back(std::chrono::duration_cast<realTime>(sum_recv));
+                                // recvtimes.clear();
 
-                            // endFramePrint();
+                                // endFramePrint();
+                            }
+                            numWrittenThisClient[i] = 0;
+                            printf("socket %i  dispatch %i/%i\n", sd, numWrittenThisFrame,numExpectedThisFrame);
+                        }else{
+                            // std::cout << "file set " << FD_ISSET( sd , &readfds) << " on socket #" << sd << std::endl;
+                            static std::atomic<int> tileID;
+                            int myTileID = tileID++;
+                            CompressedTile encoded;
+                            // receive the data size of compressed tile
+                            int numBytes = 0;
+                            auto start = std::chrono::high_resolution_clock::now();
+
+                            int dataSize = recv(sd, &numBytes, sizeof(int), MSG_MORE);
+                            // std::cout << " Compressed tile would have " << numBytes << " bytes" << std::endl;
+                            encoded.numBytes = numBytes;
+                            encoded.data = new unsigned char[encoded.numBytes];
+                            valread = recv( sd , encoded.data, encoded.numBytes, MSG_WAITALL);
+
+                            auto end = std::chrono::high_resolution_clock::now();
+                            // std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;
+                            const box2i region = encoded.getRegion();
+                            recvtimes.push_back(std::chrono::duration_cast<realTime>(end - start));
+                            compressions.emplace_back( 100.0 * static_cast<float>(numBytes) / (tileSize * tileSize));
+                            const box2i affectedDisplays = wallConfig.affectedDisplays(region);
+
+                            for (int dy=affectedDisplays.lower.y;dy<affectedDisplays.upper.y;dy++)
+                                for (int dx=affectedDisplays.lower.x;dx<affectedDisplays.upper.x;dx++) {
+                                    int toRank = wallConfig.rankOfDisplay(vec2i(dx,dy));
+                                    MPI_CALL(Send(encoded.data, encoded.numBytes, MPI_BYTE, toRank, myTileID, displayGroup.comm));
+                            }
+                            numWrittenThisClient[i] += region.size().product();
+
                         }
+                        //printf("socket %i  dispatch %i/%i\n", sd, numWrittenThisClient[i], numPixelsPerClient[i]);
+
+                        // printf("region %i %i - %i %i displays %i %i - %i %i\n",
+                        //         region.lower.x,
+                        //         region.lower.y,
+                        //         region.upper.x,
+                        //         region.upper.y,
+                        //         affectedDisplays.lower.x,
+                        //         affectedDisplays.lower.y,
+                        //         affectedDisplays.upper.x,
+                        //         affectedDisplays.upper.y);
+
+                        //numBytesAfterCompression += encoded.numBytes;
+
                         if (valread == 0)
                         {
                             //Somebody disconnected , get his details and print

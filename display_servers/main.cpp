@@ -36,8 +36,8 @@ void usage(const std::string &err)
 namespace ospray{
     namespace dw{
         
-        size_t numWrittenThisFrame = 0;
-        std::mutex addMutex;
+        // size_t numWrittenThisFrame = 0;
+        // std::mutex addMutex;
         /*! the display callback */
         void displayNewFrame(const uint32_t *left, 
                              const uint32_t *right, 

@@ -93,7 +93,7 @@ namespace ospray {
                     // need barrier here! if not, some images saved inside callback function are wrong. 
                       displayGroup.barrier();
                       numHasWritten = 0;
-                      printf("display %i/%i has a full frame!\n", displayGroup.rank,displayGroup.size);
+                      // printf("display %i/%i has a full frame!\n", displayGroup.rank,displayGroup.size);
                       //need barrier here! if not, some images saved inside callback function are wrong.
                       realTime sumTime;
                       for(size_t i = 0; i < decompressiontimes.size(); i++){

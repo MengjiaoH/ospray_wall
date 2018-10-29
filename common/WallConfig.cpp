@@ -74,14 +74,11 @@ namespace ospray {
               throw std::runtime_error("display arrangement not implemented ...");
       }
     }
-    
 
     box2i  WallConfig::regionOfRank(int rank) const
     { 
       return regionOfDisplay(displayIDofRank(rank)); 
     }
-
-
 
     /*! returns range of displays that are affected by the given
       region of pixels (ie, that together are guaranteed to cover
@@ -169,6 +166,45 @@ namespace ospray {
       const vec2i realPixels = numDisplays * pixelsPerDisplay;
       const vec2i bezelPixels = (numDisplays-vec2i(1)) * bezelPixelsPerDisplay();
       return realPixels+bezelPixels; 
+    }
+
+    std::vector<int>  WallConfig::calculateNumPixelsPerClient(int clientNum) const
+    {
+      vec2i tileSize = vec2i(256);
+      std::vector<int> numPixelsPerClient;
+      vec2i numTiles = divRoundUp(totalPixels(), tileSize);
+      // numTiles.x = ceil(totalPixels().x / tileSize);
+      // numTiles.y = ceil(totalPixels().y / tileSize);
+      const int ALLTASK = numTiles.x * numTiles.y;
+      // std::cout << "all task = " << ALLTASK << std::endl;
+      // num of tasks per client
+      std::vector<int> NTasks;
+      for(int i = 0; i < clientNum; i++){
+        int tasks = ALLTASK  / clientNum;
+        if ((ALLTASK % clientNum) > i)
+            tasks++;
+        NTasks.push_back(tasks);
+      }
+      for(int i = 0; i < clientNum; i++){
+        int tasks = NTasks[i];
+        int pixels = 0;
+        for(int t = 0; t < tasks; t++){
+          const size_t tileID = t * clientNum + i;
+          vec2i tile;
+          tile.y = tileID / numTiles.x;
+          tile.x = tileID - tile.y*numTiles.x;
+          region2i region;
+          region.lower = tile * tileSize;
+          region.upper = ospcommon::min(region.lower + tileSize, totalPixels());
+          pixels += (region.upper - region.lower).product();
+        }
+        numPixelsPerClient.push_back(pixels);
+      }
+      
+      // for(int i = 0; i < clientNum; i++){
+      //   std::cout << "client #" << i << " num pixels = " << numPixelsPerClient[i] << std::endl;
+      // }
+      return numPixelsPerClient;
     }
 
     void WallConfig::print() const
