@@ -29,10 +29,7 @@ namespace ospray {
 
 #if THREADED_RECV
       std::mutex displayMutex;
-# ifdef OSPRAY_TASKING_TBB
-      tbb::task_scheduler_init tbb_init;
-# endif
-      tasking::parallel_for(THREADED_RECV,[&](int) {
+      // tasking::parallel_for(THREADED_RECV, [&](int) {
               void *decompressor = CompressedTile::createDecompressor();
               while (1) 
               {
@@ -86,13 +83,14 @@ namespace ospray {
                   std::lock_guard<std::mutex> lock(displayMutex);
 #endif
                   numHasWritten += numWritten;
-                  DW_DBG(printf("written %li / %li\n",numHasWritten,numExpectedPerDisplay));
+                  printf("display # %d written %li / %li\n", displayGroup.rank,numHasWritten,numExpectedPerDisplay);
                   if (numHasWritten == numExpectedPerDisplay) {
 
-                      //printf("display %i/%i has a full frame!\n",displayGroup.rank,displayGroup.size);
+                      // printf("display %i/%i has a full frame!\n",displayGroup.rank,displayGroup.size);
                     // need barrier here! if not, some images saved inside callback function are wrong. 
-                      displayGroup.barrier();
+                      
                       numHasWritten = 0;
+                      displayGroup.barrier();
                       // printf("display %i/%i has a full frame!\n", displayGroup.rank,displayGroup.size);
                       //need barrier here! if not, some images saved inside callback function are wrong.
                       realTime sumTime;
@@ -123,7 +121,7 @@ namespace ospray {
                   }
                 }
           CompressedTile::freeDecompressor(decompressor);
-        });
+        // });
 #endif
     }
 
