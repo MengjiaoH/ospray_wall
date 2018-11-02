@@ -5,11 +5,13 @@
 #include "bench/pico_bench/pico_bench.h"
 #include "../common/WallConfig.h"
 #include "../common/CompressedTile.h"
+#include "ospcommon/containers/TransactionalBuffer.h"
 #include <thread>
 #include <vector>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <chrono>
+#include <atomic>
 
 namespace ospray {
   namespace dw {
@@ -44,11 +46,15 @@ namespace ospray {
                 int valread;
                 fd_set readfds;
                 int max_sd, sd;
+                // TODO: make the client socket a vector to not limit # of clients
                 int max_clients = 40;
                 int client_socket[40];
                 struct sockaddr_in address;
                 int addrlen;
                 std::mutex recvMutex;
+                std::mutex addMutex;
+
+                std::atomic<bool> quit_threads;
 
                 const int ppn;
                 int clientNum;
@@ -68,6 +74,8 @@ namespace ospray {
 
                 const WallConfig wallConfig;
                 const bool hasHeadNode;
+
+                size_t numHasWritten = 0;
       
                 const DisplayCallback displayCallback;
                 void *const objectForCallback;
@@ -75,7 +83,7 @@ namespace ospray {
                 /*! total number of pixels we have to write this frame until we
                     have a full frame buffer */
                 size_t numExpectedThisFrame;
-                size_t numHasWritten;
+                // size_t numHasWritten;
                 size_t numExpectedPerDisplay;
                 /*! @{ the four pixel arrays for left/right eye and
                     receive/display buffers, respectively */
@@ -92,7 +100,6 @@ namespace ospray {
                 using realTime = std::chrono::duration<double, std::milli>;
                 std::vector<realTime> recvtimes, decompressiontimes;
                 std::vector<realTime> decompressionTime, recvTime, sendTime;
-
 
                 using compressionStats = pico_bench::Statistics<compressionPercent>;
                 using Stats = pico_bench::Statistics<realTime>;

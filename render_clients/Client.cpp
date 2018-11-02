@@ -135,15 +135,22 @@ namespace ospray{
             // !! Send tile
             //! Send how large the compressed data
             // TODO: Measure sending time
-            auto start = std::chrono::high_resolution_clock::now();
-            // sendMutex.lock();
-            std::lock_guard<std::mutex> lock(sendMutex);
-            int compressedData = send(sock, &encoded.numBytes, sizeof(int), MSG_MORE);
-            // std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << compressedData << std::endl;
-            //! Send compressed tile
-            int out = send(sock, encoded.data, encoded.numBytes, 0);
+            // auto start = std::chrono::high_resolution_clock::now();
+            {
+                std::lock_guard<std::mutex> lock(sendMutex);
+                box2i region = encoded.getRegion();
+                printf("Rank # %i region %i %i - %i %i \n", 
+                                                                    me.rank,
+                                                                    region.lower.x,
+                                                                    region.lower.y,
+                                                                    region.upper.x,
+                                                                    region.upper.y);
+                int compressedData = send(sock, &encoded.numBytes, sizeof(int), MSG_MORE);
+                // std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << compressedData << std::endl;
+                //! Send compressed tile
+                int out = send(sock, encoded.data, encoded.numBytes, 0);
+            }
             // std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << out << std::endl;
-            // sendMutex.unlock();
 
             // auto end = std::chrono::high_resolution_clock::now();
             // sendtimes.push_back(std::chrono::duration_cast<realTime>(end - start));

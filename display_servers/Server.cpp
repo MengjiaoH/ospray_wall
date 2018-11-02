@@ -29,8 +29,9 @@ namespace ospray{
              dispatchGroup(dispatchGroup), wallConfig(wallConfig),
              displayCallback(displayCallback), objectForCallback(objectForCallback),
              hasHeadNode(hasHeadNode), ppn(ppn), numExpectedThisFrame(wallConfig.totalPixels().product()),
-             numHasWritten(0), numExpectedPerDisplay( wallConfig.displayPixelCount()), recv_l(NULL), recv_r(NULL), disp_l(NULL), disp_r(NULL), clientNum(clientNum),
-             numPixelsPerClient(wallConfig.calculateNumPixelsPerClient(clientNum)), numWrittenThisClient(std::vector<int>(clientNum, 0))
+              numExpectedPerDisplay( wallConfig.displayPixelCount()), recv_l(NULL), recv_r(NULL), disp_l(NULL), disp_r(NULL), clientNum(clientNum),
+             numPixelsPerClient(wallConfig.calculateNumPixelsPerClient(clientNum)), numWrittenThisClient(std::vector<int>(clientNum, 0)),
+             quit_threads(false)
         {
             // commThreadIsReady.lock();
             // canStartProcessing.lock();

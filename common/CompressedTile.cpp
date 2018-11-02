@@ -91,6 +91,7 @@ namespace ospray {
                            &jpegBuffer, 
                            &jpegSize,TJSAMP_420,JPEG_QUALITY,0); 
       this->numBytes = jpegSize + sizeof(*header);
+      PING;
 
        //compress again
       //size_t out_length; 
