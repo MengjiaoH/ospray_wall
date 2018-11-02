@@ -66,17 +66,14 @@ namespace ospray{
                 // =======================================================
                 if(world.rank == 0){
                     waitForConnection(portNum);
-                    // while(1){
-                    //     for(int i = 0; i < clientNum; i++){
-                    //         std::cout << "thread #" << i << std::endl;
-                    //         recvThread[i] = std::thread([i, this](){
-                    //             runDispatcher(i);
-                    //         });
-                    //     }
-                    //     for(int i = 0; i < clientNum; i++){
-                    //         recvThread[i].join();
-                    //     }
-                    // }
+                    // FD_ZERO(&readfds);
+                    for(int i = 0; i < clientNum; i++){
+                        int rank = -1;
+                        int sock = client_socket[i];
+                        int r = recv(sock, &rank, sizeof(int), 0);
+                        rankList.push_back(rank);
+                        std::cout << " socket #" << sock << " rank #" << rank << std::endl;
+                    }
                     runDispatcher();
                 }else{
                     // =======================================================
@@ -137,33 +134,20 @@ namespace ospray{
             // for(int c = 0; c < clientNum; c++)
             {
                 //clear the socket set
-                FD_ZERO(&readfds);
-                // add master socket to set
-                FD_SET(service_sock, &readfds);
+                // FD_ZERO(&readfds);
+                // // add master socket to set
+                // FD_SET(service_sock, &readfds);
 
-                max_sd = service_sock;
-                // add child sockets to set
-                // for( int i = 0; i < clientNum; i++){
-                //     // socket descriptor
-                //     sd = client_socket[i];
-                //     // if valid socket descroptor then add to read list
-                //     if(sd > 0){
-                //         FD_SET(sd, &readfds);
-                //     }
-                //     // highest file descriptor number, need it for the select function
-                //     if(sd > max_sd){
-                //         max_sd = sd;
-                //     }
+                // max_sd = service_sock;
+
+                // activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
+                // if((activity < 0) && (errno != EINTR)){
+                //     printf("select error");
                 // }
-                
-                activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
-                if((activity < 0) && (errno != EINTR)){
-                    printf("select error");
-                }
-                //If something happened on the master socket , 
-                //then its an incoming connection 
-                if (FD_ISSET(service_sock, &readfds))
-                { 
+                // //If something happened on the master socket , 
+                // //then its an incoming connection 
+                // if (FD_ISSET(service_sock, &readfds))
+                // { 
                     if ((new_socket = accept(service_sock, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)  
                     {
                         perror("accept");  
@@ -182,9 +166,8 @@ namespace ospray{
                             c = i;
                             break;
                         }
-                        
                     }
-                }
+                // }
                 if(c == clientNum - 1){
                     break;
                 }

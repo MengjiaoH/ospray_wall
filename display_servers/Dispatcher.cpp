@@ -34,50 +34,42 @@ namespace ospray {
     using std::endl;
     using std::flush;
     
-    static size_t numWrittenThisFrame = 0;
-    //std::mutex addMutex;
-    //static ospcommon::TransactionalBuffer<std::shared_ptr<CompressedTile>> inbox;
+    // static size_t numWrittenThisFrame = 0;
 
    /* [>! the dispatcher that receives tiles on the head node, and then
       dispatches them to the actual tile receivers */
     void Server::runDispatcher()
     {
-        // size_t numWrittenThisFrame = 0;
-        // size_t numExpectedThisFrame = wallConfig.totalPixelCount();
-        // std::cout << "socket index = " << socket_index <<std::endl;
-        //std::cout << " ========== start receiving tiles ========== " << std::endl;
         for(int i = 0; i < clientNum; i++)
         {
             int sd = client_socket[i];
-            if(sd > max_sd){
-                max_sd = sd;
-            }
-            recvThread[i] = std::thread([i, sd, this](){
-                std::cout << "start thread #" << i << std::endl;
-                std::cout << "socket #" << sd << std::endl;
-                std::vector<std::shared_ptr<CompressedTile>> inbox;
+            int rank_index = rankList[i];
+             std::cout << " socket #" << sd << " rank #" << rank_index 
+                            << " numPixelsFromClient #" << numPixelsPerClient[rank_index] << std::endl;
+            // FD_SET(sd, &readfds);
+            recvThread[i] = std::thread([i, rank_index, sd, this](){
+                // std::cout << "start thread #" << i << std::endl;
+                // std::cout << "socket #" << sd << std::endl;
+                // std::cout << " num pixels from this client = " << numPixelsPerClient[i] << std::endl;
+                std::vector<std::shared_ptr<CompressedTile>> inbox; 
                 while (!quit_threads)
                 {
-                    // fd_set readfds_local;
-                    // FD_ZERO(&readfds);
-                    // FD_SET(sd, &readfds);
-                    // int activity = select(1, &readfds, NULL, NULL, NULL);
+                    // int activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
                     // if((activity < 0) && (errno != EINTR)){
                     //     printf("select error");
                     // }
+                    // std::cout << "file set " << FD_ISSET(sd , &readfds) << " on socket #" << sd << std::endl;
                     // if (FD_ISSET(sd , &readfds))
                     // {
-            
-                        // std::cout << "file set " << FD_ISSET( sd , &readfds) << " on socket #" << sd << std::endl;
-                        static std::atomic<int> tileID(0);
-                        int myTileID = tileID++;
+                        // static std::atomic<int> tileID(0);
+                        // int myTileID = tileID++;
                         auto tile = std::make_shared<CompressedTile>();
                         // receive the data size of compressed tile
                         int numBytes = 0;
                         auto start = std::chrono::high_resolution_clock::now();
 
-                        int dataSize = recv(sd, &numBytes, sizeof(int), MSG_WAITALL);
-                        // std::cout << " Compressed tile would have " << numBytes << " bytes" << std::endl;
+                        int dataSize = recv(sd, &numBytes, sizeof(int), 0);
+                        // std::cout << "socket = " << sd << " Compressed tile would have " << numBytes << " bytes" << std::endl;
                         // std::cout << " data read " << dataSize << std::endl;
                         tile ->numBytes = numBytes;
                         tile ->data = new unsigned char[tile ->numBytes];
@@ -93,32 +85,34 @@ namespace ospray {
                             compressions.emplace_back( 100.0 * static_cast<float>(numBytes) / (tileSize * tileSize));
                         }
 
-
-                        // std::lock_guard<std::mutex> lock(recvMutex);
                         // numWrittenThisFrame += region.size().product();
                         numWrittenThisClient[i] += region.size().product();
+                        // std::cout << "socket " << sd << " processing region " << region << 
+                        //                     "numWrittenThisClient = " << numWrittenThisClient[i] << "/" << numPixelsPerClient[i] << std::endl;
                         // push the tile to the inbox
                         inbox.push_back(tile);
 
-                        if(numWrittenThisClient[i] == numPixelsPerClient[i]){
+                        if(numWrittenThisClient[i] == numPixelsPerClient[rank_index]){
+                            // std::cout << "socket = " << sd << std::endl;
                             if(!inbox.empty()){
                                     for (auto &message : inbox) {
                                             const box2i region = message ->getRegion();
-                                            std::cout << "socket " << sd << " processing region " << region << std::endl;
+                                            // std::cout << "socket " << sd << " processing region " << region << std::endl;
                                             const box2i affectedDisplays = wallConfig.affectedDisplays(region);
-                                        for (int dy=affectedDisplays.lower.y;dy<affectedDisplays.upper.y;dy++)
-                                            for (int dx=affectedDisplays.lower.x;dx<affectedDisplays.upper.x;dx++) {
-                                                int toRank = wallConfig.rankOfDisplay(vec2i(dx,dy));
-                                                // printf("socket %i region %i %i - %i %i To rank #%i \n", sd,
-                                                //                                                                 region.lower.x,
-                                                //                                                                 region.lower.y,
-                                                //                                                                 region.upper.x,
-                                                //                                                                 region.upper.y,
-                                                //                                                                 toRank);
-                                                MPI_CALL(Send(message ->data, message ->numBytes, MPI_BYTE, toRank, myTileID, displayGroup.comm));
+                                            for (int dy=affectedDisplays.lower.y;dy<affectedDisplays.upper.y;dy++)
+                                                for (int dx=affectedDisplays.lower.x;dx<affectedDisplays.upper.x;dx++) {
+                                                    int toRank = wallConfig.rankOfDisplay(vec2i(dx,dy));
+                                                    printf("socket %i region %i %i - %i %i To rank #%i \n", sd,
+                                                                                                                    region.lower.x,
+                                                                                                                    region.lower.y,
+                                                                                                                    region.upper.x,
+                                                                                                                    region.upper.y,
+                                                                                                                    toRank);
+                                                    MPI_CALL(Send(message ->data, message ->numBytes, MPI_BYTE, toRank, 0, displayGroup.comm));
+                                        }
                                     }
-                                }
                             }
+                            dispatchGroup.barrier();
                             numWrittenThisClient[i] = 0;
                             inbox.clear();
                         }

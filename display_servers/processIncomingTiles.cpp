@@ -83,12 +83,12 @@ namespace ospray {
                   std::lock_guard<std::mutex> lock(displayMutex);
 #endif
                   numHasWritten += numWritten;
-                  // printf("display # %d written %li  %li / %li \n", displayGroup.rank, numWritten, numHasWritten, numExpectedPerDisplay);
-                  //  printf(" region %i %i - %i %i \n",
-                  //               globalRegion.lower.x,
-                  //               globalRegion.lower.y,
-                  //               globalRegion.upper.x,
-                  //               globalRegion.upper.y);
+                  printf("display # %d written %li  %li / %li \n", displayGroup.rank, numWritten, numHasWritten, numExpectedPerDisplay);
+                   printf(" region %i %i - %i %i \n",
+                                globalRegion.lower.x,
+                                globalRegion.lower.y,
+                                globalRegion.upper.x,
+                                globalRegion.upper.y);
                   if (numHasWritten == numExpectedPerDisplay) {
 
                       // printf("display %i/%i has a full frame!\n",displayGroup.rank,displayGroup.size);
@@ -96,7 +96,7 @@ namespace ospray {
                       
                       numHasWritten = 0;
                       displayGroup.barrier();
-                      // std::cout << " =================================== " << std::endl;
+                      std::cout << " =================================== " << std::endl;
                       // printf("display %i/%i has a full frame!\n", displayGroup.rank,displayGroup.size);
                       //need barrier here! if not, some images saved inside callback function are wrong.
                       realTime sumTime;

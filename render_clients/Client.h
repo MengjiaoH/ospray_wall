@@ -39,6 +39,7 @@ namespace ospray{
                 void sendTile();
                 void endFrame();
                 void printStatistics();
+                void sendRank();
                             
             private: 
                 // host name and port number connect to

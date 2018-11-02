@@ -16,7 +16,8 @@ namespace ospray{
             //! Connect to head node of display cluster  
             establishConnection();
             std::cout << "connection establish" << std::endl;
-
+            // send rank to service 
+            sendRank();
             //! Construct wall configurations
             constructWallConfig(wallinfo);
             assert(wallConfig); 
@@ -74,6 +75,12 @@ namespace ospray{
             me.barrier();
         }// end of establishConnection
 
+        void Client::sendRank(){
+            int rank = me.rank;
+            int s = send(sock, &rank, sizeof(int), 0);
+            me.barrier();
+        }
+
         void Client::constructWallConfig(const WallInfo *wallinfo)
         {
             wallConfig = new WallConfig(wallinfo ->numDisplays,
@@ -127,8 +134,8 @@ namespace ospray{
             auto end0 = std::chrono::high_resolution_clock::now();
             compressiontimes.push_back(std::chrono::duration_cast<realTime>(end0 - start0));
 
-            static std::atomic<int> ID;
-            int myTileID = ID++;
+            // static std::atomic<int> ID;
+            // int myTileID = ID++;
             //std::cout << "tile ID = " << ID << std::endl;
             // TODO: Measure compression ratio
             // TODO: Push all rendered tiles into a outbox and send them in a separate thread 
@@ -139,12 +146,12 @@ namespace ospray{
             {
                 std::lock_guard<std::mutex> lock(sendMutex);
                 box2i region = encoded.getRegion();
-                printf("Rank # %i region %i %i - %i %i \n", 
-                                                                    me.rank,
-                                                                    region.lower.x,
-                                                                    region.lower.y,
-                                                                    region.upper.x,
-                                                                    region.upper.y);
+                // printf("Rank # %i region %i %i - %i %i \n", 
+                //                                                     me.rank,
+                //                                                     region.lower.x,
+                //                                                     region.lower.y,
+                //                                                     region.upper.x,
+                //                                                     region.upper.y);
                 int compressedData = send(sock, &encoded.numBytes, sizeof(int), MSG_MORE);
                 // std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << compressedData << std::endl;
                 //! Send compressed tile

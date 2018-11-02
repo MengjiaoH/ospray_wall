@@ -49,6 +49,7 @@ namespace ospray {
                 // TODO: make the client socket a vector to not limit # of clients
                 int max_clients = 40;
                 int client_socket[40];
+                std::vector<int> rankList;
                 struct sockaddr_in address;
                 int addrlen;
                 std::mutex recvMutex;

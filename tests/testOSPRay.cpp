@@ -202,6 +202,7 @@ namespace ospray{
              //Render
             while(1){
                 frameID++;
+                // std::cout << "===================== Frame "  << frameID << " =================== " << "\n";
                auto lastTime = std::chrono::high_resolution_clock::now();
                ospRenderFrame(pixelOP_framebuffer, renderer, OSP_FB_COLOR);
                // ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR);
