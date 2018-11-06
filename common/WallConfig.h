@@ -97,7 +97,7 @@ namespace ospray {
           that pixel region */
       box2i  affectedDisplays(const box2i &pixelRegion) const;
       std::vector<int> calculateNumPixelsPerClient(int clientNum) const;
-
+      int calculateNumTilesPerFrame() const;
       void   print() const;
       inline bool doStereo() const { return stereo; }
 
@@ -106,6 +106,7 @@ namespace ospray {
       DisplayArrangement displayArrangement;
       bool stereo;
       vec2f relativeBezelWidth;
+      int numTilesPerFrame;
     };
 
   } // ::ospray::dw

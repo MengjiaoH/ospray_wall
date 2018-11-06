@@ -145,6 +145,7 @@ namespace ospray{
             // auto start = std::chrono::high_resolution_clock::now();
             {
                 std::lock_guard<std::mutex> lock(sendMutex);
+                //std::cout << " frame ID = " << encoded.getFrameID() << std::endl; 
                 box2i region = encoded.getRegion();
                 // printf("Rank # %i region %i %i - %i %i \n", 
                 //                                                     me.rank,

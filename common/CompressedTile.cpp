@@ -79,6 +79,7 @@ namespace ospray {
       header->region.lower = begin;
       header->region.upper = end;
       header->eye          = tile.eye;
+      header ->frameID = tile.frameID;
 
 #if TURBO_JPEG 
       // save data into jepgBuffer after compressed by Turbojpeg      
@@ -187,6 +188,14 @@ namespace ospray {
       const CompressedTileHeader *header = (const CompressedTileHeader *)data;
       assert(header);
       return header->region;
+    }
+
+    int CompressedTile::getFrameID() const 
+    {
+         const CompressedTileHeader *header = (const CompressedTileHeader *)data;
+         assert(header);
+         return header ->frameID;
+
     }
     
     /*! send the tile to the given rank in the given group */

@@ -24,8 +24,10 @@
 #include "../common/WallConfig.h"
 #include "../common/helper.h"
 #include "Server.h"
+#include <algorithm>
 #include <atomic>
 #include <vector>
+#include <iterator>
 
 namespace ospray {
   namespace dw {
@@ -69,7 +71,7 @@ namespace ospray {
                         auto start = std::chrono::high_resolution_clock::now();
 
                         int dataSize = recv(sd, &numBytes, sizeof(int), 0);
-                        // std::cout << "socket = " << sd << " Compressed tile would have " << numBytes << " bytes" << std::endl;
+                         //std::cout << "socket = " << sd << " Compressed tile would have " << numBytes << " bytes" << std::endl;
                         // std::cout << " data read " << dataSize << std::endl;
                         tile ->numBytes = numBytes;
                         tile ->data = new unsigned char[tile ->numBytes];
@@ -78,44 +80,108 @@ namespace ospray {
                         auto end = std::chrono::high_resolution_clock::now();
                         // std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;
                         const box2i region = tile ->getRegion();
+
+                        //std::cout << " frame ID = " << tile ->getFrameID() << std::endl; 
                         // std::cout << "Got region:  " << region << std::endl;
                         {
                             std::lock_guard<std::mutex> lock(addMutex);
                             recvtimes.push_back(std::chrono::duration_cast<realTime>(end - start));
                             compressions.emplace_back( 100.0 * static_cast<float>(numBytes) / (tileSize * tileSize));
                         }
-
-                        // numWrittenThisFrame += region.size().product();
-                        numWrittenThisClient[i] += region.size().product();
-                        // std::cout << "socket " << sd << " processing region " << region << 
-                        //                     "numWrittenThisClient = " << numWrittenThisClient[i] << "/" << numPixelsPerClient[i] << std::endl;
-                        // push the tile to the inbox
-                        inbox.push_back(tile);
-
-                        if(numWrittenThisClient[i] == numPixelsPerClient[rank_index]){
-                            // std::cout << "socket = " << sd << std::endl;
-                            if(!inbox.empty()){
-                                    for (auto &message : inbox) {
-                                            const box2i region = message ->getRegion();
-                                            // std::cout << "socket " << sd << " processing region " << region << std::endl;
-                                            const box2i affectedDisplays = wallConfig.affectedDisplays(region);
-                                            for (int dy=affectedDisplays.lower.y;dy<affectedDisplays.upper.y;dy++)
-                                                for (int dx=affectedDisplays.lower.x;dx<affectedDisplays.upper.x;dx++) {
-                                                    int toRank = wallConfig.rankOfDisplay(vec2i(dx,dy));
-                                                    printf("socket %i region %i %i - %i %i To rank #%i \n", sd,
-                                                                                                                    region.lower.x,
-                                                                                                                    region.lower.y,
-                                                                                                                    region.upper.x,
-                                                                                                                    region.upper.y,
-                                                                                                                    toRank);
-                                                    MPI_CALL(Send(message ->data, message ->numBytes, MPI_BYTE, toRank, 0, displayGroup.comm));
-                                        }
-                                    }
+                        
+                        // check if the frameID is equal to currFrameID
+                        if((tile -> getFrameID()) == currFrameID){
+                            std::cout << "currFrameID = " << currFrameID << std::endl;
+                            //const box2i region = message ->getRegion();
+                            //std::cout << "socket " << sd << " processing region " << region << std::endl;
+                            const box2i affectedDisplays = wallConfig.affectedDisplays(region);
+                            for (int dy=affectedDisplays.lower.y;dy<affectedDisplays.upper.y;dy++)
+                                for (int dx=affectedDisplays.lower.x;dx<affectedDisplays.upper.x;dx++) {
+                                    int toRank = wallConfig.rankOfDisplay(vec2i(dx,dy));
+                                    printf("socket %i region %i %i - %i %i To rank #%i \n", sd,
+                                                                                            region.lower.x,
+                                                                                            region.lower.y,
+                                                                                            region.upper.x,
+                                                                                            region.upper.y,
+                                                                                            toRank);
+                                    MPI_CALL(Send(tile ->data, tile ->numBytes, MPI_BYTE, toRank, 0, displayGroup.comm));
+                                }
+                            {
+                                std::lock_guard<std::mutex> lock(addMutex);
+                                recvNumTiles++;
                             }
-                            dispatchGroup.barrier();
-                            numWrittenThisClient[i] = 0;
-                            inbox.clear();
+                        }else{
+                            inbox.push_back(tile);
                         }
+
+                        // go through inbox to see if there's a tile with the currFrameID
+                        if(!inbox.empty()){
+                            auto it = std::partition(inbox.begin(), inbox.end(), 
+                                                     [&](const std::shared_ptr<CompressedTile> &t){
+                                                     return t ->getFrameID() != currFrameID;
+                                                    });
+                            for(auto m = it; m != inbox.end(); ++m){
+                                {
+                                    std::lock_guard<std::mutex> lock(addMutex);
+                                    recvNumTiles++;
+                                }
+                                const box2i region = (*m) ->getRegion();
+                                const box2i affectedDisplays = wallConfig.affectedDisplays(region);
+                                for (int dy=affectedDisplays.lower.y;dy<affectedDisplays.upper.y;dy++)
+                                    for (int dx=affectedDisplays.lower.x;dx<affectedDisplays.upper.x;dx++) {
+                                        int toRank = wallConfig.rankOfDisplay(vec2i(dx,dy));
+                                        printf("socket %i region %i %i - %i %i To rank #%i \n", sd,
+                                                                                            region.lower.x,
+                                                                                            region.lower.y,
+                                                                                            region.upper.x,
+                                                                                            region.upper.y,
+                                                                                            toRank);
+                                        MPI_CALL(Send((*m) ->data, (*m) ->numBytes, MPI_BYTE, toRank, 0, displayGroup.comm));
+                                }
+                            }
+                            // erase all sent tiles
+                            inbox.erase(it, inbox.end());
+                        }
+
+                        { 
+                            std::lock_guard<std::mutex> lock(addMutex);
+                            // if we have received all tiles 
+                            if(recvNumTiles == numTilesPerFrame){
+                                recvNumTiles = 0;
+                                currFrameID++;
+                            }
+                        }
+                         //numWrittenThisFrame += region.size().product();
+                        //numWrittenThisClient[i] += region.size().product();
+                         //std::cout << "socket " << sd << " processing region " << region << 
+                                             //"numWrittenThisClient = " << numWrittenThisClient[i] << "/" << numPixelsPerClient[i] << std::endl;
+                         //push the tile to the inbox
+                        //inbox.push_back(tile);
+
+                        //if(numWrittenThisClient[i] == numPixelsPerClient[rank_index]){
+                             //std::cout << "socket = " << sd << std::endl;
+                            //if(!inbox.empty()){
+                                    //for (auto &message : inbox) {
+                                            //const box2i region = message ->getRegion();
+                                             //std::cout << "socket " << sd << " processing region " << region << std::endl;
+                                            //const box2i affectedDisplays = wallConfig.affectedDisplays(region);
+                                            //for (int dy=affectedDisplays.lower.y;dy<affectedDisplays.upper.y;dy++)
+                                                //for (int dx=affectedDisplays.lower.x;dx<affectedDisplays.upper.x;dx++) {
+                                                    //int toRank = wallConfig.rankOfDisplay(vec2i(dx,dy));
+                                                    //printf("socket %i region %i %i - %i %i To rank #%i \n", sd,
+                                                                                                                    //region.lower.x,
+                                                                                                                    //region.lower.y,
+                                                                                                                    //region.upper.x,
+                                                                                                                    //region.upper.y,
+                                                                                                                    //toRank);
+                                                    //MPI_CALL(Send(message ->data, message ->numBytes, MPI_BYTE, toRank, 0, displayGroup.comm));
+                                        //}
+                                    //}
+                            //}
+                            //dispatchGroup.barrier();
+                            //numWrittenThisClient[i] = 0;
+                            //inbox.clear();
+                        //}
 
                         if (valread == 0)
                         {

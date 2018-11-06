@@ -168,6 +168,13 @@ namespace ospray {
       return realPixels+bezelPixels; 
     }
 
+    int WallConfig::calculateNumTilesPerFrame() const
+    {
+        vec2i tileSize = vec2i(256);
+        vec2i numTiles = divRoundUp(totalPixels(), tileSize);
+        return numTiles.product();
+    }
+
     std::vector<int>  WallConfig::calculateNumPixelsPerClient(int clientNum) const
     {
       vec2i tileSize = vec2i(256);

@@ -50,6 +50,7 @@ namespace ospray {
       int       pitch { 0 };
       /*! which eye this goes to (if stereo) */
       int       eye   { 0 };
+      int       frameID {0};
       /*! pointer to buffer of pixels; this buffer is 'pitch' int-sized pixels wide */
       uint32_t *pixel { nullptr };
     };
@@ -69,7 +70,8 @@ namespace ospray {
 
       /*! get region that this tile corresponds to */
       box2i getRegion() const;
-
+    
+      int getFrameID() const;
       /*! send the tile to the given rank in the given group */
       void sendTo(const mpicommon::Group &outside, const int targetRank) const;
 
@@ -88,6 +90,7 @@ namespace ospray {
     struct CompressedTileHeader {
       box2i region;
       int   eye;
+      int frameID;
       unsigned char payload[0];
     };
 

@@ -31,11 +31,11 @@ namespace ospray{
              hasHeadNode(hasHeadNode), ppn(ppn), numExpectedThisFrame(wallConfig.totalPixels().product()),
               numExpectedPerDisplay( wallConfig.displayPixelCount()), recv_l(NULL), recv_r(NULL), disp_l(NULL), disp_r(NULL), clientNum(clientNum),
              numPixelsPerClient(wallConfig.calculateNumPixelsPerClient(clientNum)), numWrittenThisClient(std::vector<int>(clientNum, 0)),
-             quit_threads(false)
+             quit_threads(false), currFrameID(1), recvNumTiles(0), 
+             numTilesPerFrame(wallConfig.calculateNumTilesPerFrame())
         {
             // commThreadIsReady.lock();
             // canStartProcessing.lock();
-            
             commThread = std::thread([this](){
                     setupCommunication();
             });

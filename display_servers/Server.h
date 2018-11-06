@@ -61,7 +61,9 @@ namespace ospray {
                 int clientNum;
                 std::vector<int> numPixelsPerClient;
                 std::vector<int> numWrittenThisClient;
-
+                int currFrameID;
+                int numTilesPerFrame;
+                int recvNumTiles;
                 static std::thread commThread;
                 std::thread recvThread[20];
                 /*! group that contails ALL display service procs, including the

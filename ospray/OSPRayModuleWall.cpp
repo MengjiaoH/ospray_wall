@@ -47,10 +47,10 @@ namespace ospray {
         Instance(FrameBuffer *fb, 
                  PixelOp::Instance *prev,
                  dw::Client *client)
-          : client(client)
+          : client(client), framebuffer(fb)
         {
-          fb->pixelOp = this;
- 
+          fb ->pixelOp = this;
+          fb ->frameID = 0; 
           //sendThread = std::thread([&](){
                   ////std::lock_guard<std::mutex> lock(sendMutex);
                   //client -> sendTile();
@@ -68,6 +68,10 @@ namespace ospray {
         // /*! gets called every time the frame buffer got 'commit'ted */
         // virtual void  commitNotify() {}
         // /*! gets called once at the end of the frame */
+        virtual void beginFrame()
+        {
+            //std::cout << "frame id = " << framebuffer ->frameID << std::endl;
+        }
         virtual void endFrame() 
         { client->endFrame(); }
         
@@ -130,6 +134,7 @@ namespace ospray {
           
           if (!stereo) {
             plainTile.eye = 0;
+            plainTile.frameID = framebuffer ->frameID;
             client->writeTile(plainTile);
           } else {
             int trueScreenWidth = client->getWallConfig()->totalPixels().x;
@@ -173,6 +178,7 @@ namespace ospray {
         virtual std::string toString() const;
 
         dw::Client *client;
+        FrameBuffer *framebuffer;
         //std::thread sendThread;
       };
       
