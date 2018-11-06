@@ -21,7 +21,10 @@ namespace ospray{
             //! Construct wall configurations
             constructWallConfig(wallinfo);
             assert(wallConfig); 
-            numExpectedThisFrame = wallConfig ->totalPixels().product();    
+            
+            numPixelsPerClient = wallConfig ->calculateNumPixelsPerClient(me.size);
+            numWrittenThisClient = std::vector<int>(me.size, 0);
+            //numExpectedThisFrame = wallConfig ->totalPixels().product();    
             if(me.rank == 0){
                 wallConfig -> print();
             }
@@ -104,8 +107,8 @@ namespace ospray{
                 sendStats.time_suffix = "ms";
                 std::cout  << "Message send statistics:\n" << sendStats << "\n";
             }
-            if(!compressionTime.empty()){
-                Stats compressionStats(compressionTime);
+            if(!compressiontimes.empty()){
+                Stats compressionStats(compressiontimes);
                 compressionStats.time_suffix = "ms";
                 std::cout  << "Compression time statistics:\n" << compressionStats << "\n";
             }
@@ -116,7 +119,6 @@ namespace ospray{
             if(me.rank == 0){
                 printStatistics();
             }
-
             MPI_CALL(Barrier(me.comm));
         }
 
@@ -141,12 +143,9 @@ namespace ospray{
             // TODO: Push all rendered tiles into a outbox and send them in a separate thread 
             // !! Send tile
             //! Send how large the compressed data
-            // TODO: Measure sending time
-            // auto start = std::chrono::high_resolution_clock::now();
             {
                 std::lock_guard<std::mutex> lock(sendMutex);
-                //std::cout << " frame ID = " << encoded.getFrameID() << std::endl; 
-                box2i region = encoded.getRegion();
+                auto start = std::chrono::high_resolution_clock::now();
                 // printf("Rank # %i region %i %i - %i %i \n", 
                 //                                                     me.rank,
                 //                                                     region.lower.x,
@@ -157,32 +156,24 @@ namespace ospray{
                 // std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << compressedData << std::endl;
                 //! Send compressed tile
                 int out = send(sock, encoded.data, encoded.numBytes, 0);
+                auto end = std::chrono::high_resolution_clock::now();
+                sendtimes.push_back(std::chrono::duration_cast<realTime>(end - start));
             }
-            // std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << out << std::endl;
-
-            // auto end = std::chrono::high_resolution_clock::now();
-            // sendtimes.push_back(std::chrono::duration_cast<realTime>(end - start));
-            // box2i region = encoded.getRegion();
-            // const box2i affectedDisplays = wallConfig ->affectedDisplays(region);
-            // numWrittenThisFrame += region.size().product();
-            // if(numWrittenThisFrame == numExpectedThisFrame){
-            //     numWrittenThisFrame = 0;
-            //     // realTime sum_send, sum_compression;
-            //     // for(size_t i = 0; i < sendtimes.size(); i++){
-            //     //     sum_send += sendtimes[i];
-            //     // }
-            //     // sendTime.push_back(std::chrono::duration_cast<realTime>(sum_send));
-
-            //     // for(size_t i = 0; i < compressiontimes.size(); i++){
-            //     //       sum_compression += compressiontimes[i];
-            //     //     }
-            //     // compressionTime.push_back(std::chrono::duration_cast<realTime>(sum_compression));
-
-            //     // compressiontimes.clear();
-            //     // sendtimes.clear();
-            // }
-            //std::cout << " Send tile ID = " << myTileID << " contains " << encoded.numBytes << " bytes and send " << out << " bytes" << std::endl;
-
+            {
+                std::lock_guard<std::mutex> lock(addMutex);
+                box2i region = encoded.getRegion();
+                numWrittenThisClient[me.rank] += region.size().product();
+                if(numWrittenThisClient[me.rank] == numPixelsPerClient[me.rank]){
+                    // Client has sent all tiles
+                    numWrittenThisClient[me.rank] = 0;
+                    realTime sum_send;
+                    for(size_t i = 0; i < sendtimes.size(); i++){
+                        sum_send += sendtimes[i];
+                    }
+                    sendTime.push_back(std::chrono::duration_cast<realTime>(sum_send));
+                    sendtimes.clear();
+                }
+            }
             // ## Debug 
             // CompressedTileHeader *header = (CompressedTileHeader *)encoded.data;
 
@@ -194,55 +185,7 @@ namespace ospray{
             // writePPM(filename.c_str(), &img_size, (uint32_t*)header -> payload);
             // Correct !
 
-            //outbox.push_back(message);
-            //printf("region %i %i - %i %i displays %i %i - %i %i\n",
-                    //tile.region.lower.x,
-                    //tile.region.lower.y,
-                   //tile.region.upper.x,
-                   //tile.region.upper.y,
-                   //affectedDisplays.lower.x,
-                   //affectedDisplays.lower.y,
-                   //affectedDisplays.upper.x,
-                   //affectedDisplays.upper.y);
-
         }// end of writeTile
-
-        void Client::sendTile()
-        {
-            while(true){
-            //std::cout << "outbox is " << outbox.empty() << std::endl;
-                //if(!outbox.empty()){
-                    //std::cout << "debug 1" << std::endl;
-                    int count = 0;
-                    //std::lock_guard<std::mutex> lock(state_mutex);
-                    auto outgoingTiles = outbox.consume();
-                    for(auto &msg : outgoingTiles){
-                        //std::cout << "count = " << count << std::endl;
-                        count++;
-                        // zmq::message_t tilemsg(msg ->size);
-                        // unsigned char *data = (unsigned char *)tilemsg.data();
-                        //std::cout << "message size " << msg ->size << std::endl;
-                        //memcpy(data, &numOfRank, sizeof(int));
-                         //memcpy(&data[4], toRank.data(), sizeof(int) * numOfRank);
-                        // memcpy(data, msg ->data, msg -> size);
-                        //std::lock_guard<std::mutex> lock(sendMutex);
-                        //static double start = getSysTime();
-                        // int send = socket.send(tilemsg, 0);
-                        //std::cout << "Client rank " << me.rank << " send " << send << std::endl;
-                            
-                        // int recv = socket.recv(&receive1);
-                        //static double end = getSysTime();
-                        //std::cout << "Send tile time = " << end - start << std::endl;
-                        //std::cout << "Client rank " << me.rank << " receive " << recv << std::endl;
-                        //std::cout << "Rank " << me.rank << " Client: 1 : receive responce" << std::endl;
-                    }
-                //}
-            }
-            //if(quit_state){
-                //return;
-            //}
-        }// end of send Tile
-
 
     }// ospray::dw
 }// ospray

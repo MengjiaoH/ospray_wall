@@ -36,7 +36,6 @@ namespace ospray{
                 vec2i totalPixelsInWall() const;
                 const WallConfig *getWallConfig() const{ return wallConfig; }
                 void writeTile(const PlainTile &tile);
-                void sendTile();
                 void endFrame();
                 void printStatistics();
                 void sendRank();
@@ -47,7 +46,7 @@ namespace ospray{
                 int sock;
                 int portNum;
                 std::mutex sendMutex;
-
+                std::mutex addMutex;
                 // MPI Group
                 mpicommon::Group me;
                 mpicommon::Group displayGroup;
@@ -55,15 +54,16 @@ namespace ospray{
                 WallConfig *wallConfig;
                 WallInfo *wallInfo;
  
-                size_t numWrittenThisFrame = 0;
-                size_t numExpectedThisFrame;          
+                std::vector<int> numPixelsPerClient;
+                std::vector<int> numWrittenThisClient;
+                //size_t numExpectedThisFrame;          
+                //size_t numWrittenThisFrame = 0;
                 ospcommon::TransactionalBuffer<std::shared_ptr<Message>> outbox;
- 
+
                 // Measurement
-                
                 using realTime = std::chrono::duration<double, std::milli>;
                 std::vector<realTime> sendtimes, compressiontimes;
-                std::vector<realTime> sendTime, compressionTime;
+                std::vector<realTime> sendTime;
                 using Stats = pico_bench::Statistics<realTime>;
 
                 void establishConnection();
