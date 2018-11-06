@@ -149,40 +149,15 @@ namespace ospray {
                             if(recvNumTiles == numTilesPerFrame){
                                 recvNumTiles = 0;
                                 currFrameID++;
+                                realTime sumTime;
+                                for(size_t i = 0; i < recvtimes.size(); i++){
+                                    sumTime += recvtimes[i];
+                                }
+                                recvTime.push_back(std::chrono::duration_cast<realTime>(sumTime));
+                                recvtimes.clear();
                             }
                         }
-                         //numWrittenThisFrame += region.size().product();
-                        //numWrittenThisClient[i] += region.size().product();
-                         //std::cout << "socket " << sd << " processing region " << region << 
-                                             //"numWrittenThisClient = " << numWrittenThisClient[i] << "/" << numPixelsPerClient[i] << std::endl;
-                         //push the tile to the inbox
-                        //inbox.push_back(tile);
-
-                        //if(numWrittenThisClient[i] == numPixelsPerClient[rank_index]){
-                             //std::cout << "socket = " << sd << std::endl;
-                            //if(!inbox.empty()){
-                                    //for (auto &message : inbox) {
-                                            //const box2i region = message ->getRegion();
-                                             //std::cout << "socket " << sd << " processing region " << region << std::endl;
-                                            //const box2i affectedDisplays = wallConfig.affectedDisplays(region);
-                                            //for (int dy=affectedDisplays.lower.y;dy<affectedDisplays.upper.y;dy++)
-                                                //for (int dx=affectedDisplays.lower.x;dx<affectedDisplays.upper.x;dx++) {
-                                                    //int toRank = wallConfig.rankOfDisplay(vec2i(dx,dy));
-                                                    //printf("socket %i region %i %i - %i %i To rank #%i \n", sd,
-                                                                                                                    //region.lower.x,
-                                                                                                                    //region.lower.y,
-                                                                                                                    //region.upper.x,
-                                                                                                                    //region.upper.y,
-                                                                                                                    //toRank);
-                                                    //MPI_CALL(Send(message ->data, message ->numBytes, MPI_BYTE, toRank, 0, displayGroup.comm));
-                                        //}
-                                    //}
-                            //}
-                            //dispatchGroup.barrier();
-                            //numWrittenThisClient[i] = 0;
-                            //inbox.clear();
-                        //}
-
+                        
                         if (valread == 0)
                         {
                             quit_threads = true;

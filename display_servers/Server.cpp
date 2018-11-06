@@ -218,14 +218,13 @@ namespace ospray{
                 recvStats.time_suffix = "ms";
                 std::cout  << "Message recv statistics:\n" << recvStats << "\n";
             }
-            //std::cout << "decompression is " << decompressionTime.empty() << std::endl;
-
-            // if(!decompressionTime.empty()){
-            //     Stats decompressionStats(decompressionTime);
-            //     decompressionStats.time_suffix = "ms";
-            //     std::cout  << "Decompression time statistics:\n" << decompressionStats << "\n";
-            // }
-
+            
+            if(!decompressiontimes.empty()){
+                Stats decompressionStats(decompressiontimes);
+                decompressionStats.time_suffix = "ms";
+                std::cout  << "Decompression time statistics:\n" << decompressionStats << "\n";
+            }
+           
         }
  
 

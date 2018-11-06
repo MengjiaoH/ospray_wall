@@ -102,7 +102,7 @@ namespace ospray {
                 // Compression time
                 using realTime = std::chrono::duration<double, std::milli>;
                 std::vector<realTime> recvtimes, decompressiontimes;
-                std::vector<realTime> decompressionTime, recvTime, sendTime;
+                std::vector<realTime> recvTime, sendTime;
 
                 using compressionStats = pico_bench::Statistics<compressionPercent>;
                 using Stats = pico_bench::Statistics<realTime>;

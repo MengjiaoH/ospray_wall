@@ -29,7 +29,11 @@ namespace ospray {
 
 #if THREADED_RECV
       std::mutex displayMutex;
-      // tasking::parallel_for(THREADED_RECV, [&](int) {
+#ifdef OSPRAY_TASKING_TBB
+      tbb::task_scheduler_init tbb_init;
+#endif
+       //tasking::parallel_for(THREADED_RECV, [&](int) {
+#endif
               void *decompressor = CompressedTile::createDecompressor();
               while (1) 
               {
@@ -83,14 +87,13 @@ namespace ospray {
                   std::lock_guard<std::mutex> lock(displayMutex);
 #endif
                   numHasWritten += numWritten;
-                  printf("display # %d written %li  %li / %li \n", displayGroup.rank, numWritten, numHasWritten, numExpectedPerDisplay);
-                   printf(" region %i %i - %i %i \n",
-                                globalRegion.lower.x,
-                                globalRegion.lower.y,
-                                globalRegion.upper.x,
-                                globalRegion.upper.y);
+                  //printf("display # %d written %li  %li / %li \n", displayGroup.rank, numWritten, numHasWritten, numExpectedPerDisplay);
+                   //printf(" region %i %i - %i %i \n",
+                                //globalRegion.lower.x,
+                                //globalRegion.lower.y,
+                                //globalRegion.upper.x,
+                                //globalRegion.upper.y);
                   if (numHasWritten == numExpectedPerDisplay) {
-
                       // printf("display %i/%i has a full frame!\n",displayGroup.rank,displayGroup.size);
                     // need barrier here! if not, some images saved inside callback function are wrong. 
                       
@@ -98,18 +101,7 @@ namespace ospray {
                       displayGroup.barrier();
                       std::cout << " =================================== " << std::endl;
                       // printf("display %i/%i has a full frame!\n", displayGroup.rank,displayGroup.size);
-                      //need barrier here! if not, some images saved inside callback function are wrong.
-                      realTime sumTime;
-                      for(size_t i = 0; i < decompressiontimes.size(); i++){
-                        sumTime += decompressiontimes[i];
-                      }
-                      decompressionTime.push_back(std::chrono::duration_cast<realTime>(sumTime));
-                      decompressiontimes.clear();
-                      //if(!decompressionTime.empty()){
-                          //Stats decompressionStats(decompressionTime);
-                          //decompressionStats.time_suffix = "ms";
-                          //std::cout  << "Decompression time statistics:\n" << decompressionStats << "\n";
-                      //}
+                      //need barrier here! if not, some images saved inside callback function are wrong.                     
                       // displayGroup.barrier();
                       DW_DBG(printf("#osp:dw(%i/%i) barrier'ing on %i/%i\n",
                                     displayGroup.rank,displayGroup.size,
@@ -127,8 +119,9 @@ namespace ospray {
                   }
                 }
           CompressedTile::freeDecompressor(decompressor);
-        // });
-#endif
+//#if THREADED_RECV
+         //});
+//#endif
     }
 
   } // ::ospray::dw
