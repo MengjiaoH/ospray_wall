@@ -99,7 +99,7 @@ namespace ospray {
                       
                       numHasWritten = 0;
                       displayGroup.barrier();
-                      std::cout << " =================================== " << std::endl;
+                      // std::cout << " =================================== " << std::endl;
                       // printf("display %i/%i has a full frame!\n", displayGroup.rank,displayGroup.size);
                       //need barrier here! if not, some images saved inside callback function are wrong.                     
                       // displayGroup.barrier();

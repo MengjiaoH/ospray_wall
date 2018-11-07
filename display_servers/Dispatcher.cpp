@@ -46,8 +46,8 @@ namespace ospray {
         {
             int sd = client_socket[i];
             int rank_index = rankList[i];
-             std::cout << " socket #" << sd << " rank #" << rank_index 
-                            << " numPixelsFromClient #" << numPixelsPerClient[rank_index] << std::endl;
+            //  std::cout << " socket #" << sd << " rank #" << rank_index 
+            //                 << " numPixelsFromClient #" << numPixelsPerClient[rank_index] << std::endl;
             // FD_SET(sd, &readfds);
             recvThread[i] = std::thread([i, rank_index, sd, this](){
                 // std::cout << "start thread #" << i << std::endl;
@@ -91,19 +91,19 @@ namespace ospray {
                         
                         // check if the frameID is equal to currFrameID
                         if((tile -> getFrameID()) == currFrameID){
-                            std::cout << "currFrameID = " << currFrameID << std::endl;
+                            // std::cout << "currFrameID = " << currFrameID << std::endl;
                             //const box2i region = message ->getRegion();
                             //std::cout << "socket " << sd << " processing region " << region << std::endl;
                             const box2i affectedDisplays = wallConfig.affectedDisplays(region);
                             for (int dy=affectedDisplays.lower.y;dy<affectedDisplays.upper.y;dy++)
                                 for (int dx=affectedDisplays.lower.x;dx<affectedDisplays.upper.x;dx++) {
                                     int toRank = wallConfig.rankOfDisplay(vec2i(dx,dy));
-                                    printf("socket %i region %i %i - %i %i To rank #%i \n", sd,
-                                                                                            region.lower.x,
-                                                                                            region.lower.y,
-                                                                                            region.upper.x,
-                                                                                            region.upper.y,
-                                                                                            toRank);
+                                    // printf("socket %i region %i %i - %i %i To rank #%i \n", sd,
+                                    //                                                         region.lower.x,
+                                    //                                                         region.lower.y,
+                                    //                                                         region.upper.x,
+                                    //                                                         region.upper.y,
+                                    //                                                         toRank);
                                     MPI_CALL(Send(tile ->data, tile ->numBytes, MPI_BYTE, toRank, 0, displayGroup.comm));
                                 }
                             {
