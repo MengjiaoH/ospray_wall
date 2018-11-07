@@ -1,2 +1,5 @@
 Entire displaywall 36 * 2560 * 1440
 
+40 threads 0.16
+10 threads 0.3
+15 threads 0.23
