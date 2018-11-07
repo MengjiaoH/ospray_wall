@@ -65,7 +65,7 @@ namespace ospray {
                 int numTilesPerFrame;
                 int recvNumTiles;
                 static std::thread commThread;
-                std::thread recvThread[20];
+                std::thread recvThread[40];
                 /*! group that contails ALL display service procs, including the
                     head node (if applicable) */
                 const mpicommon::Group me;
