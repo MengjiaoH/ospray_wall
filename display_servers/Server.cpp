@@ -213,8 +213,8 @@ namespace ospray{
             stats.time_suffix = "%";
             std::cout << "Compression ratio statistics: \n" << stats << "\n";
 
-            if(!recvTime.empty()){
-                Stats recvStats(recvTime);
+            if(!recvtimes.empty()){
+                Stats recvStats(recvtimes);
                 recvStats.time_suffix = "ms";
                 std::cout  << "Message recv statistics:\n" << recvStats << "\n";
             }

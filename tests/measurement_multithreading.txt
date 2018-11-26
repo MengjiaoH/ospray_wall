@@ -3,3 +3,58 @@ Entire displaywall 36 * 2560 * 1440
 40 threads 0.16
 10 threads 0.3
 15 threads 0.23
+
+Kepler cluster 6 nodes 
+1 fps
+Rendering cluster
+Measurement based on a tile (256 * 256)
+Message send statistics:
+Statistics:
+	max: 7.54463ms
+	min: 7.40773ms
+	median: 7.47618ms
+	median abs dev: 0.068447ms
+	mean: 7.47618ms
+	std dev: 0.068447ms
+	# of samples: 2
+Compression time statistics:
+Statistics:
+	max: 2.59928ms
+	min: 0.235174ms
+	median: 0.768518ms
+	median abs dev: 0.034816ms
+	mean: 0.768656ms
+	std dev: 0.230166ms
+	# of samples: 828
+
+Display Cluster 
+
+Compression ratio statistics: 
+Statistics:
+	max: 9.80988%
+	min: 0%
+	median: 3.27606%
+	median abs dev: 0.720215%
+	mean: 3.62814%
+	std dev: 1.27157%
+	# of samples: 20662
+Message recv statistics:
+Statistics:
+	max: 138.172ms
+	min: 0.001157ms
+	median: 1.16974ms
+	median abs dev: 0.88414ms
+	mean: 2.21874ms
+	std dev: 4.90726ms
+	# of samples: 47598
+
+Decompression time statistics:
+Statistics:
+	max: 0.228298ms
+	min: 0.142125ms
+	median: 0.157619ms
+	median abs dev: 0.0093645ms
+	mean: 0.159124ms
+	std dev: 0.0143873ms
+	# of samples: 70
+

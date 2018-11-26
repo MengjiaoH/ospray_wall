@@ -117,7 +117,7 @@ namespace ospray{
         void Client::endFrame()
         {
             if(me.rank == 0){
-                printStatistics();
+                // printStatistics();
             }
             MPI_CALL(Barrier(me.comm));
         }
@@ -131,10 +131,10 @@ namespace ospray{
             CompressedTile encoded;
             if (!g_compressor) g_compressor = CompressedTile::createCompressor();
             void *compressor = g_compressor;
-            auto start0 = std::chrono::high_resolution_clock::now();
+            // auto start0 = std::chrono::high_resolution_clock::now();
             encoded.encode(compressor,tile);
-            auto end0 = std::chrono::high_resolution_clock::now();
-            compressiontimes.push_back(std::chrono::duration_cast<realTime>(end0 - start0));
+            // auto end0 = std::chrono::high_resolution_clock::now();
+            // compressiontimes.push_back(std::chrono::duration_cast<realTime>(end0 - start0));
 
             // static std::atomic<int> ID;
             // int myTileID = ID++;
@@ -145,7 +145,7 @@ namespace ospray{
             //! Send how large the compressed data
             {
                 std::lock_guard<std::mutex> lock(sendMutex);
-                auto start = std::chrono::high_resolution_clock::now();
+                // auto start = std::chrono::high_resolution_clock::now();
                 // printf("Rank # %i region %i %i - %i %i \n", 
                 //                                                     me.rank,
                 //                                                     region.lower.x,
@@ -156,24 +156,24 @@ namespace ospray{
                 // std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << compressedData << std::endl;
                 //! Send compressed tile
                 int out = send(sock, encoded.data, encoded.numBytes, 0);
-                auto end = std::chrono::high_resolution_clock::now();
-                sendtimes.push_back(std::chrono::duration_cast<realTime>(end - start));
+                // auto end = std::chrono::high_resolution_clock::now();
+                // sendtimes.push_back(std::chrono::duration_cast<realTime>(end - start));
             }
-            {
-                std::lock_guard<std::mutex> lock(addMutex);
-                box2i region = encoded.getRegion();
-                numWrittenThisClient[me.rank] += region.size().product();
-                if(numWrittenThisClient[me.rank] == numPixelsPerClient[me.rank]){
-                    // Client has sent all tiles
-                    numWrittenThisClient[me.rank] = 0;
-                    realTime sum_send;
-                    for(size_t i = 0; i < sendtimes.size(); i++){
-                        sum_send += sendtimes[i];
-                    }
-                    sendTime.push_back(std::chrono::duration_cast<realTime>(sum_send));
-                    sendtimes.clear();
-                }
-            }
+            // {
+            //     std::lock_guard<std::mutex> lock(addMutex);
+            //     box2i region = encoded.getRegion();
+            //     numWrittenThisClient[me.rank] += region.size().product();
+            //     if(numWrittenThisClient[me.rank] == numPixelsPerClient[me.rank]){
+            //         // Client has sent all tiles
+            //         numWrittenThisClient[me.rank] = 0;
+            //         realTime sum_send;
+            //         for(size_t i = 0; i < sendtimes.size(); i++){
+            //             sum_send += sendtimes[i];
+            //         }
+            //         sendTime.push_back(std::chrono::duration_cast<realTime>(sum_send));
+            //         sendtimes.clear();
+            //     }
+            // }
             // ## Debug 
             // CompressedTileHeader *header = (CompressedTileHeader *)encoded.data;
 
