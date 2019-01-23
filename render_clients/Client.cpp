@@ -61,14 +61,14 @@ namespace ospray{
      
             // TODO: connect use hostname instead of IP address  
             // Convert IPv4 and IPv6 addresses from text to binary form
-             if(inet_pton(AF_INET, "155.98.19.60", &serv_addr.sin_addr)<=0) 
-             {
-                 printf("\nInvalid address/ Address not supported \n");
-             }
-            //if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) 
-            //{
-                //printf("\nInvalid address/ Address not supported \n");
-            //}
+             //if(inet_pton(AF_INET, "155.98.19.60", &serv_addr.sin_addr)<=0) 
+             //{
+               //  printf("\nInvalid address/ Address not supported \n");
+            // }
+            if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) 
+            {
+                printf("\nInvalid address/ Address not supported \n");
+            }
   
             if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
             {
