@@ -143,20 +143,20 @@ namespace ospray {
                             inbox.erase(it, inbox.end());
                         }
 
-                        // { 
-                        //     std::lock_guard<std::mutex> lock(addMutex);
-                        //     // if we have received all tiles 
-                        //     if(recvNumTiles == numTilesPerFrame){
-                        //         recvNumTiles = 0;
-                        //         currFrameID++;
-                        //         realTime sumTime;
-                        //         for(size_t i = 0; i < recvtimes.size(); i++){
-                        //             sumTime += recvtimes[i];
-                        //         }
-                        //         recvTime.push_back(std::chrono::duration_cast<realTime>(sumTime));
-                        //         recvtimes.clear();
-                        //     }
-                        // }
+                        { 
+                            std::lock_guard<std::mutex> lock(addMutex);
+                            // if we have received all tiles 
+                            if(recvNumTiles == numTilesPerFrame){
+                                recvNumTiles = 0;
+                                currFrameID++;
+                                // realTime sumTime;
+                                // for(size_t i = 0; i < recvtimes.size(); i++){
+                                //     sumTime += recvtimes[i];
+                                // }
+                                // recvTime.push_back(std::chrono::duration_cast<realTime>(sumTime));
+                                // recvtimes.clear();
+                            }
+                        }
                         
                         if (valread == 0)
                         {
@@ -167,7 +167,7 @@ namespace ospray {
                             //Close the socket and mark as 0 in list for reuse
                             close( sd );
                             client_socket[i] = 0;
-                            endFramePrint();
+                            // endFramePrint();
                         }
                 //    } // end of fd_isset
                 }

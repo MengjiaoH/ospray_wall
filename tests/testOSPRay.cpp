@@ -68,7 +68,7 @@ namespace ospray{
             }
             // Load Modules
             ospLoadModule("wall");   
-            ospLoadModule("tubes");
+            // ospLoadModule("tubes");
 
             if(ospInit(&ac, av) != OSP_NO_ERROR){
                 throw std::runtime_error("Cannot Initialize OSPRay");

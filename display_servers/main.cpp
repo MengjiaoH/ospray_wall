@@ -242,17 +242,22 @@ namespace ospray{
                     std::string host = hostName;
                     ServiceInfo serviceInfo;
                     serviceInfo.sendTo(wallInfo, host, clientNum);
-                    GLFWindow *glfwWindow = nullptr;
+                    GLFWindow *masterWindow = nullptr;
+                    vec2i Position(1000, 0);//default is (0, 0)
+                    sprintf(title, "Control Window on the Master Node");
+                    masterWindow = new GLFWindow(windowSize, Position, title, doFullScreen, doStereo);
                     startWallServer(world, 
                                     displayGroup, 
                                     dispatchGroup, 
                                     wallConfig, 
                                     hasHeadNode, 
                                     displayNewFrame, 
-                                    glfwWindow, 
+                                    masterWindow, 
                                     portNum, 
                                     process_pernode,
                                     clientNum);
+                    assert(masterWindow);
+                    masterWindow ->run();
                 // this rank is used to receive tiles and send tiles to other ranks 
                 // no window here
                 }else if(world.rank >= process_pernode){

@@ -94,11 +94,11 @@ namespace ospray {
                                 //globalRegion.upper.x,
                                 //globalRegion.upper.y);
                   if (numHasWritten == numExpectedPerDisplay) {
-                    if(!decompressiontimes.empty()){
-                      Stats decompressionStats(decompressiontimes);
-                      decompressionStats.time_suffix = "ms";
-                      std::cout  << "Decompression time statistics:\n" << decompressionStats << "\n";
-                    }
+                    // if(!decompressiontimes.empty()){
+                    //   Stats decompressionStats(decompressiontimes);
+                    //   decompressionStats.time_suffix = "ms";
+                    //   std::cout  << "Decompression time statistics:\n" << decompressionStats << "\n";
+                    // }
                       // printf("display %i/%i has a full frame!\n",displayGroup.rank,displayGroup.size);
                     // need barrier here! if not, some images saved inside callback function are wrong. 
                       

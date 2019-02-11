@@ -15,7 +15,6 @@ namespace ospray{
         {
             //! Connect to head node of display cluster  
             establishConnection();
-            std::cout << "connection establish" << std::endl;
             // send rank to service 
             sendRank();
             //! Construct wall configurations
@@ -61,20 +60,25 @@ namespace ospray{
      
             // TODO: connect use hostname instead of IP address  
             // Convert IPv4 and IPv6 addresses from text to binary form
-             if(inet_pton(AF_INET, "155.98.19.60", &serv_addr.sin_addr)<=0) 
-             {
-                 printf("\nInvalid address/ Address not supported \n");
-             }
-            //if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) 
-            //{
-                //printf("\nInvalid address/ Address not supported \n");
-            //}
-  
-            if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+            //  if(inet_pton(AF_INET, "155.98.19.60", &serv_addr.sin_addr)<=0) 
+            //  {
+            //      printf("\nInvalid address/ Address not supported \n");
+            //  }
+            if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) 
             {
-                printf("\nConnection Failed \n");
+                printf("\nInvalid address/ Address not supported \n");
             }
-            std::cout << "sock " << sock << std::endl;
+
+            while(1){
+                int connection = connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+                if (connection >= 0)
+                {
+                    printf("\nConnection establish \n");
+                    break;
+                }
+            }
+
+            // std::cout << "sock " << sock << std::endl;
             me.barrier();
         }// end of establishConnection
 

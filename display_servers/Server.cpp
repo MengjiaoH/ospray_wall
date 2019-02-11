@@ -131,43 +131,26 @@ namespace ospray{
             printf("Waiting for connections ... \n");
             int  c = 0;
             while(1)
-            // for(int c = 0; c < clientNum; c++)
             {
-                //clear the socket set
-                // FD_ZERO(&readfds);
-                // // add master socket to set
-                // FD_SET(service_sock, &readfds);
-
-                // max_sd = service_sock;
-
-                // activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
-                // if((activity < 0) && (errno != EINTR)){
-                //     printf("select error");
-                // }
-                // //If something happened on the master socket , 
-                // //then its an incoming connection 
-                // if (FD_ISSET(service_sock, &readfds))
-                // { 
-                    if ((new_socket = accept(service_sock, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)  
+                if ((new_socket = accept(service_sock, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)  
+                {
+                    perror("accept");  
+                    exit(EXIT_FAILURE);  
+                } 
+                //inform user of socket number - used in send and receive commands 
+                printf("New connection , socket fd is %d , ip is : %s , port : %d \n" , new_socket , inet_ntoa(address.sin_addr) , ntohs
+                        (address.sin_port));
+                //add new socket to array of sockets 
+                for (int i = 0; i < clientNum; i++)  {  
+                    //if position is empty 
+                    if( client_socket[i] == 0) 
                     {
-                        perror("accept");  
-                        exit(EXIT_FAILURE);  
-                    } 
-                    //inform user of socket number - used in send and receive commands 
-                    printf("New connection , socket fd is %d , ip is : %s , port : %d \n" , new_socket , inet_ntoa(address.sin_addr) , ntohs
-                            (address.sin_port));
-                    //add new socket to array of sockets 
-                    for (int i = 0; i < clientNum; i++)  {  
-                        //if position is empty 
-                        if( client_socket[i] == 0) 
-                        {
-                            client_socket[i] = new_socket;
-                            printf("Adding to list of sockets as %d\n" , i);
-                            c = i;
-                            break;
-                        }
+                        client_socket[i] = new_socket;
+                        printf("Adding to list of sockets as %d\n" , i);
+                        c = i;
+                        break;
                     }
-                // }
+                }
                 if(c == clientNum - 1){
                     break;
                 }
