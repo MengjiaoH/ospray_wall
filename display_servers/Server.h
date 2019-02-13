@@ -5,6 +5,7 @@
 #include "bench/pico_bench/pico_bench.h"
 #include "../common/WallConfig.h"
 #include "../common/CompressedTile.h"
+#include "../common/helper.h"
 #include "ospcommon/containers/TransactionalBuffer.h"
 #include <thread>
 #include <vector>
@@ -33,14 +34,18 @@ namespace ospray {
                        void *objectForCallback,
                        const bool &hasHeadNode,
                        const int &ppn,
-                       const int clientNum);
+                       const int clientNum,
+                       const int image_socket);
                 ~Server();
                 void setupCommunication(); 
                 void processIncomingTiles(mpicommon::Group &ourside);
                 void allocateFrameBuffers();
                 void runDispatcher();
+                void receiveImage();
+                void allocateImageFrameBuffer();
             private:
                 const int portNum;
+                const int image_socket;
                 
                 int service_sock;
                 int valread;
@@ -93,6 +98,7 @@ namespace ospray {
                     receive/display buffers, respectively */
                 uint32_t *recv_l, *recv_r, *disp_l, *disp_r;
                 /*! @} */
+                uint32_t *image_recv_l, *image_recv_r, *image_disp_l, *image_disp_r;
 
                 // Measurement 
                 size_t tileSize = 256;
@@ -114,6 +120,7 @@ namespace ospray {
                                         const WallConfig &wallConfig);
                 void endFramePrint();
 
+
         };
         void startWallServer(const mpicommon::Group world,
                                     const mpicommon::Group displayGroup,
@@ -124,7 +131,8 @@ namespace ospray {
                                     void *objectForCallback,
                                     int portNum,
                                     int process_pernode,
-                                    int clientNum);
+                                    int clientNum,
+                                    int image_socket);
 
   }// ospray::dw
 }//ospray

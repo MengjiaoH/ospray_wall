@@ -29,6 +29,8 @@ namespace ospray{
               client::establishConnection) */
           std::string mpiPortName;
 
+          int sock = 0;
+
           /*! read a service info from a given hostName:port. The service
             has to already be running on that port 
 

@@ -36,7 +36,6 @@ namespace ospray {
                          bool stereo)
       : size(size),
         position(position),
-
         title(title),
         leftEye(NULL),
         rightEye(NULL),
@@ -54,8 +53,6 @@ namespace ospray {
       glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
       
-      
-   
       if (doFullScreen) {
         auto *monitor = glfwGetPrimaryMonitor();
         const GLFWvidmode* mode = glfwGetVideoMode(monitor);
@@ -87,6 +84,9 @@ namespace ospray {
         this->rightEye = rightEye;
         receivedFrameID++;
         newFrameAvail.notify_one();
+        // vec2i img_size{512, 512};
+        // writePPM("test_left.ppm", &img_size, leftEye);
+        // std::cout << "Image saved to 'test_left.ppm'\n";
       }
     }
 
@@ -101,6 +101,8 @@ namespace ospray {
 
         if (!gotNewFrame)
           return;
+        
+        // std::cout << "new frame " << std::endl;
 
         vec2i currentSize(0);
         glfwGetFramebufferSize(this->handle, &currentSize.x, &currentSize.y);
@@ -142,6 +144,7 @@ namespace ospray {
       while (!glfwWindowShouldClose(this->handle)) {
         double lastTime = getSysTime();
         glfwPollEvents();
+        std::cout << "DEBUG " << std::endl;
         display();
         double thisTime = getSysTime();
         //std::cout << "Time of render one frame wall window " << 1.f / (thisTime - lastTime) << std::endl;

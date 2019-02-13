@@ -25,6 +25,7 @@ SOFTWARE.
 #include "FrameBuffer.h"
 // windowing stuff
 #include "GLFW/glfw3.h"
+#include "../common/helper.h"
 // std
 #include <mutex>
 #include <condition_variable>

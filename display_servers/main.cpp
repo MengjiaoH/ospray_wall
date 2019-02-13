@@ -242,6 +242,7 @@ namespace ospray{
                     std::string host = hostName;
                     ServiceInfo serviceInfo;
                     serviceInfo.sendTo(wallInfo, host, clientNum);
+                    std::cout << "service info socket " << serviceInfo.sock << std::endl;
                     GLFWindow *masterWindow = nullptr;
                     vec2i Position(1000, 0);//default is (0, 0)
                     sprintf(title, "Control Window on the Master Node");
@@ -255,8 +256,10 @@ namespace ospray{
                                     masterWindow, 
                                     portNum, 
                                     process_pernode,
-                                    clientNum);
+                                    clientNum,
+                                    serviceInfo.sock);
                     assert(masterWindow);
+                    std::cout << "debug " << std::endl;
                     masterWindow ->run();
                 // this rank is used to receive tiles and send tiles to other ranks 
                 // no window here
@@ -287,25 +290,27 @@ namespace ospray{
                                     glfwWindow, 
                                     portNum, 
                                     process_pernode,
-                                    clientNum);
+                                    clientNum,
+                                    0);
                 
                     assert(glfwWindow);
                     glfwWindow ->run();
                 }
-            }else{
-                if(arrangement == WallConfig::Arrangement_yx){
-                    // set window position by rank number and arrangement
-                    // for arrangement yx
-                    // node
-                    int n = world.rank % numDisplays.y;
-                    // windowPosition
-                    windowPosition.y = (numDisplays.y - 1 - n) * windowSize.y;
-                }else{
-                    box2i region = wallConfig.regionOfRank(world.rank);
-                    windowPosition = region.lower;
-                }
-            //glfwWindow = new GLFWindow(windowSize, windowPosition, title, doFullScreen, doStereo);
             }
+            // else{
+            //     if(arrangement == WallConfig::Arrangement_yx){
+            //         // set window position by rank number and arrangement
+            //         // for arrangement yx
+            //         // node
+            //         int n = world.rank % numDisplays.y;
+            //         // windowPosition
+            //         windowPosition.y = (numDisplays.y - 1 - n) * windowSize.y;
+            //     }else{
+            //         box2i region = wallConfig.regionOfRank(world.rank);
+            //         windowPosition = region.lower;
+            //     }
+            // //glfwWindow = new GLFWindow(windowSize, windowPosition, title, doFullScreen, doStereo);
+            // }
             world.barrier();
    	        return 0;
         }

@@ -42,6 +42,11 @@ namespace ospray {
       dispatches them to the actual tile receivers */
     void Server::runDispatcher()
     {
+        // for(int i = 0; i < 1; i++)
+        // {
+        //     receiveImage();
+        // }
+
         for(int i = 0; i < clientNum; i++)
         {
             int sd = client_socket[i];
@@ -65,6 +70,8 @@ namespace ospray {
                     // {
                         // static std::atomic<int> tileID(0);
                         // int myTileID = tileID++;
+                        
+                        // receiveImage();
                         auto tile = std::make_shared<CompressedTile>();
                         // receive the data size of compressed tile
                         int numBytes = 0;
@@ -130,12 +137,12 @@ namespace ospray {
                                 for (int dy=affectedDisplays.lower.y;dy<affectedDisplays.upper.y;dy++)
                                     for (int dx=affectedDisplays.lower.x;dx<affectedDisplays.upper.x;dx++) {
                                         int toRank = wallConfig.rankOfDisplay(vec2i(dx,dy));
-                                        printf("socket %i region %i %i - %i %i To rank #%i \n", sd,
-                                                                                            region.lower.x,
-                                                                                            region.lower.y,
-                                                                                            region.upper.x,
-                                                                                            region.upper.y,
-                                                                                            toRank);
+                                        // printf("socket %i region %i %i - %i %i To rank #%i \n", sd,
+                                        //                                                     region.lower.x,
+                                        //                                                     region.lower.y,
+                                        //                                                     region.upper.x,
+                                        //                                                     region.upper.y,
+                                        //                                                     toRank);
                                         MPI_CALL(Send((*m) ->data, (*m) ->numBytes, MPI_BYTE, toRank, 0, displayGroup.comm));
                                 }
                             }

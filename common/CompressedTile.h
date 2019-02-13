@@ -42,7 +42,7 @@ namespace ospray {
       ~PlainTile()
       { delete[] pixel; }
 
-      inline vec2i size() const { return region.size(); }
+      inline vec2i size() const { return region.size();}
 
       /*! region of pixels that this tile corresponds to */
       box2i     region;
@@ -53,6 +53,14 @@ namespace ospray {
       int       frameID {0};
       /*! pointer to buffer of pixels; this buffer is 'pitch' int-sized pixels wide */
       uint32_t *pixel { nullptr };
+      
+      inline void setRegion(const vec2i &size) 
+      {
+        region.lower.x  = 0;
+        region.lower.y  = 0;
+        region.upper.x = size.x;
+        region.upper.y = size.y;
+      }
     };
 
     /*! encoded representation of a tile - eventually to use true

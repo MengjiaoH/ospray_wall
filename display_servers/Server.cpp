@@ -9,6 +9,7 @@ namespace ospray{
         std::thread Server::commThread;
         std::mutex commThreadIsReady;
         std::mutex canStartProcessing;
+        std::mutex displayMutex;
         
         // extern size_t numWrittenThisFrame;
         // extern std::mutex addMutex;
@@ -24,7 +25,8 @@ namespace ospray{
                        void *objectForCallback,
                        const bool &hasHeadNode,
                        const int &ppn,
-                       const int clientNum)
+                       const int clientNum,
+                       const int image_socket)
             :portNum(portNum), me(me), displayGroup(displayGroup),
              dispatchGroup(dispatchGroup), wallConfig(wallConfig),
              displayCallback(displayCallback), objectForCallback(objectForCallback),
@@ -32,19 +34,19 @@ namespace ospray{
               numExpectedPerDisplay( wallConfig.displayPixelCount()), recv_l(NULL), recv_r(NULL), disp_l(NULL), disp_r(NULL), clientNum(clientNum),
              numPixelsPerClient(wallConfig.calculateNumPixelsPerClient(clientNum)), numWrittenThisClient(std::vector<int>(clientNum, 0)),
              quit_threads(false), currFrameID(1), recvNumTiles(0), 
-             numTilesPerFrame(wallConfig.calculateNumTilesPerFrame())
+             numTilesPerFrame(wallConfig.calculateNumTilesPerFrame()),image_socket(image_socket)
         {
             // commThreadIsReady.lock();
             // canStartProcessing.lock();
-            commThread = std::thread([this](){
+            // commThread = std::thread([this](){
                     setupCommunication();
-            });
+            // });
 
             // commThreadIsReady.lock();
 
-            if(hasHeadNode && me.rank == 0){
-                commThread.join();
-            }
+            // if(hasHeadNode && me.rank == 0){
+            //     commThread.join();
+            // }
             // canStartProcessing.unlock();
         }
 
@@ -74,7 +76,8 @@ namespace ospray{
                         rankList.push_back(rank);
                         std::cout << " socket #" << sock << " rank #" << rank << std::endl;
                     }
-                    runDispatcher();
+                    // runDispatcher();
+                    receiveImage();
                 }else{
                     // =======================================================
                     // TILE RECEIVER
@@ -158,6 +161,39 @@ namespace ospray{
             dispatchGroup.barrier();
         }
 
+        void Server::receiveImage()
+        {
+            void *decompressor = CompressedTile::createDecompressor();
+            allocateImageFrameBuffer();
+            
+            for(int i = 0; i < 3; i++){
+                CompressedTile image;
+                int numBytes = 0;
+                int dataSize = recv(image_socket, &numBytes, sizeof(int), 0);
+                image.numBytes = numBytes;
+                image.data = new unsigned char[image.numBytes];
+                valread = recv(image_socket , image.data, image.numBytes, MSG_WAITALL);
+                std::cout << "receive " << numBytes << " bytes " << valread << std::endl;
+                // decompression
+                const CompressedTileHeader *header = (const CompressedTileHeader *)image.data;
+                PlainTile plain(image.getRegion().size());
+                image.decode(decompressor,plain);
+                if(plain.eye){
+                    image_recv_r = plain.pixel;
+                }else{
+                    image_recv_l = plain.pixel;
+                }
+                displayCallback(image_recv_l,image_recv_r, objectForCallback);
+                // DEBUG
+                vec2i img_size{512, 512};
+                writePPM("test.ppm", &img_size, image_recv_l);
+                std::cout << "Image saved to 'test.ppm'\n";
+
+                std::swap(image_recv_l,image_disp_l);
+                std::swap(image_recv_r,image_disp_r);
+            }
+        }
+
 
         void Server::allocateFrameBuffers()
         {
@@ -165,13 +201,28 @@ namespace ospray{
           assert(disp_l == NULL);
           assert(recv_r == NULL);
           assert(disp_r == NULL);
-
           const int pixelsPerBuffer = wallConfig.pixelsPerDisplay.product();
           recv_l = new uint32_t[pixelsPerBuffer];
           disp_l = new uint32_t[pixelsPerBuffer];
           if (wallConfig.stereo) {
             recv_r = new uint32_t[pixelsPerBuffer];
             disp_r = new uint32_t[pixelsPerBuffer];
+          }
+        }// end of allocateFrameBuffers
+
+        void Server::allocateImageFrameBuffer()
+        {
+          assert(image_recv_l == NULL);
+          assert(image_disp_l == NULL);
+          assert(image_recv_r == NULL);
+          assert(image_disp_r == NULL);
+
+          const int pixelsPerBuffer = wallConfig.pixelsPerDisplay.product();
+          image_recv_l = new uint32_t[pixelsPerBuffer];
+          image_disp_l = new uint32_t[pixelsPerBuffer];
+          if (wallConfig.stereo) {
+            image_recv_r = new uint32_t[pixelsPerBuffer];
+            image_disp_r = new uint32_t[pixelsPerBuffer];
           }
         }// end of allocateFrameBuffers
 
@@ -185,9 +236,10 @@ namespace ospray{
                                     void *objectForCallback,
                                     int portNum,
                                     int process_pernode,
-                                    int clientNum){
+                                    int clientNum,
+                                    int image_socket){
             assert(Server::singleton == NULL);
-            Server::singleton = new Server(portNum, world, displayGroup, dispatchGroup, wallConfig, displayCallback, objectForCallback, hasHeadNode, process_pernode, clientNum);
+            Server::singleton = new Server(portNum, world, displayGroup, dispatchGroup, wallConfig, displayCallback, objectForCallback, hasHeadNode, process_pernode, clientNum, image_socket);
         }
 
         void Server::endFramePrint()

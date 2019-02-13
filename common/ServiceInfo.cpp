@@ -11,7 +11,7 @@ namespace ospray{
         void ServiceInfo::getFrom(const std::string &hostName,
                                   const int portNo)
         {
-            int sock = 0, valread;
+            int valread;
             struct sockaddr_in serv_addr;
             // ~~ Socket Creation
             if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -65,13 +65,12 @@ namespace ospray{
            //std::cout << "there are " << mpicommon::worker.size << " clients " << std::endl;
            //write(sock, mpicommon::worker.size);
            //flush(sock);
-           close(sock);
+        //    close(sock);
         } // ! End of getFrom
 
         void ServiceInfo::sendTo(WallInfo &wallInfo, const std::string &hostName, int &clientNum){
             int info_portNum = 8443;
             int server_fd, valread;
-            int new_socket;
             int opt = 1;
             struct sockaddr_in address;
             int addrlen = sizeof(address);
@@ -101,7 +100,7 @@ namespace ospray{
                 perror("listen");
                 exit(EXIT_FAILURE);
             }
-            if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)
+            if ((sock = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)
             {
                 perror("accept");
                 exit(EXIT_FAILURE);
@@ -110,12 +109,12 @@ namespace ospray{
             // send mpi port name
             int str_length = hostName.length();
             // std::cout << "string length = " << str_length << std::endl;
-            send(new_socket, &str_length, 4, 0);
-            send(new_socket, hostName.data(), str_length, 0);
+            send(sock, &str_length, 4, 0);
+            send(sock, hostName.data(), str_length, 0);
             // Send wall Info
-            send(new_socket, &wallInfo, sizeof(WallInfo), 0);
+            send(sock, &wallInfo, sizeof(WallInfo), 0);
             // Read the number of clients will connect 
-            valread = recv(new_socket, &clientNum, 4, 0);
+            valread = recv(sock, &clientNum, 4, 0);
             // std::cout << " DEBUG: clientNum = " << clientNum << std::endl;
         }// ! End of sendTo
 }// end of ospray::dw

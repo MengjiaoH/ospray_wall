@@ -176,14 +176,13 @@ namespace ospray{
 
             // Create framebuffer
             const osp::vec2i img_size{canvas.x, canvas.y};
-            const osp::vec2i saved_img_size{canvas.x , canvas.y};
+            const osp::vec2i saved_img_size{wallInfo.pixelsPerDisplay.x, wallInfo.pixelsPerDisplay.y};
             OSPFrameBuffer pixelOP_framebuffer = ospNewFrameBuffer(img_size, OSP_FB_NONE, OSP_FB_COLOR);
             OSPFrameBuffer framebuffer = ospNewFrameBuffer(saved_img_size, OSP_FB_SRGBA, OSP_FB_COLOR);
             ospFrameBufferClear(framebuffer, OSP_FB_COLOR); 
 
             // Create pixelOP
             OSPPixelOp pixelOp = ospNewPixelOp("wall");
-            // ospSet1i(pixelOp, "remote", remote_mode);
             ospSetString(pixelOp, "hostName", mpiPortName.c_str());
             ospSet1i(pixelOp, "portNum", portNum);
             OSPData wallInfoData = ospNewData(sizeof(WallInfo), OSP_RAW, &wallInfo, OSP_DATA_SHARED_BUFFER);
@@ -199,24 +198,38 @@ namespace ospray{
             std::vector<Time> renderTime;
             using Stats = pico_bench::Statistics<Time>;
 
-             //Render
-            while(1){
-                frameID++;
-                // std::cout << "===================== Frame "  << frameID << " =================== " << "\n";
-               auto lastTime = std::chrono::high_resolution_clock::now();
-               ospRenderFrame(pixelOP_framebuffer, renderer, OSP_FB_COLOR);
-               // ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR);
-               auto thisTime = std::chrono::high_resolution_clock::now();
-               renderTime.push_back(std::chrono::duration_cast<Time>(thisTime - lastTime));
-                // std::cout << "Frame Rate  = " << 1.f / (thisTime - lastTime) << std::endl;
+            __thread void *g_compressor = NULL;
+            if (!g_compressor) g_compressor = CompressedTile::createCompressor();
+            void *compressor = g_compressor;
+            CompressedTile encoded;
+            PlainTile image(wallInfo.pixelsPerDisplay);
+            image.setRegion(wallInfo.pixelsPerDisplay);
 
-                 //double thisTime = getSysTime();
-                 //std::cout << "offload frame rate = " << 1.f / (thisTime - lastTime) << std::endl;
-                cam_pos[1] += 1.0;
-                cam_view[1] = cam_target[1] - cam_pos[1];
-                ospSet3fv(camera, "pos", cam_pos);
-                ospSet3fv(camera, "dir", cam_view);
-                ospCommit(camera);
+            //Render
+            while(frameID < 3){
+                frameID++;
+                std::cout << "===================== Frame "  << frameID << " =================== " << "\n";
+            //    auto lastTime = std::chrono::high_resolution_clock::now();
+               
+               ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR);
+            //    uint32_t* fb  = (uint32_t*)ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);
+               image.pixel = (uint32_t*)ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);
+               encoded.encode(compressor, image);
+               std::cout << " done compress frame " << std::endl;
+               int compressedData = send(serviceInfo.sock, &encoded.numBytes, sizeof(int), MSG_MORE);
+               std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << compressedData << std::endl;
+            //    //! Send compressed tile
+               int out = send(serviceInfo.sock, encoded.data, encoded.numBytes, 0);
+               std::cout << "Send the compressed frame " << out << std::endl;
+               ospUnmapFrameBuffer(image.pixel, framebuffer);
+
+               ospRenderFrame(pixelOP_framebuffer, renderer, OSP_FB_COLOR);
+            
+               cam_pos[1] += 1.0;
+               cam_view[1] = cam_target[1] - cam_pos[1];
+               ospSet3fv(camera, "pos", cam_pos);
+               ospSet3fv(camera, "dir", cam_view);
+               ospCommit(camera);
             }
 
             if(!renderTime.empty()){
@@ -224,7 +237,11 @@ namespace ospray{
                 renderStats.time_suffix = "ms";
                 std::cout  << "Decompression time statistics:\n" << renderStats << "\n";
             }
-
+//    auto thisTime = std::chrono::high_resolution_clock::now();
+            //    renderTime.push_back(std::chrono::duration_cast<Time>(thisTime - lastTime));
+               //std::cout << "Frame Rate  = " << 1.f / (thisTime - lastTime) << std::endl;
+               //double thisTime = getSysTime();
+               //std::cout << "offload frame rate = " << 1.f / (thisTime - lastTime) << std::endl;
 
 
             // if(mpicommon::world.rank == 0){
