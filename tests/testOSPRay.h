@@ -8,6 +8,7 @@
 #include <ospray/ospray_cpp/Data.h>
 #include <ospcommon/vec.h>
 #include "bench/pico_bench/pico_bench.h"
+#include "common/arcball.h"
 
 struct Particle {
 	osp::vec3f pos;

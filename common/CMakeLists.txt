@@ -58,6 +58,7 @@ ADD_LIBRARY(ospray_wall_common
   helper.cpp
   CompressedTile.cpp
   ServiceInfo.cpp
+  arcball.cpp
   )
 
 TARGET_LINK_LIBRARIES(ospray_wall_common

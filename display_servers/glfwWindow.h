@@ -29,16 +29,17 @@ SOFTWARE.
 // std
 #include <mutex>
 #include <condition_variable>
+#include <sys/socket.h>
 
 namespace ospray {
   namespace dw {
 
-    struct GLFWindow 
+    struct Window 
     {
-      GLFWindow(const vec2i &size, const vec2i &position, const std::string &title,
-                 bool doFullScreen, bool stereo=false);
+      Window(const vec2i &size, const vec2i &position, const std::string &title,
+                 bool doFullScreen, bool stereo=false, int sock = 0);
 
-      virtual ~GLFWindow()
+      virtual ~Window()
       {
         std::cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << std::endl;
         std::cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << std::endl;
@@ -56,6 +57,7 @@ namespace ospray {
       bool doesStereo() const;
       void run();
       void create();
+
 
       static vec2i getScreenSize() 
       {
@@ -79,8 +81,22 @@ namespace ospray {
       int displayedFrameID;
       bool doFullScreen;
       std::string title;
+      int sock = 0;
       // static GLFWindow *singleton;
     };
+
+    // Extra stuff we need in GLFW callbacks
+//     struct WindowState {
+//       // Arcball &camera;
+//       vec2f prev_mouse;
+//       bool camera_changed;
+//       // AppState &app;
+
+//       WindowState(): prev_mouse(-1), camera_changed(true){}
+// };
+
+      void cursorPosCallback(GLFWwindow *window, double x, double y);
+
     
   } // ::ospray::dw
 } // ::ospray

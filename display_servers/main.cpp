@@ -43,7 +43,7 @@ namespace ospray{
                              const uint32_t *right, 
                              void *object)
         {
-            GLFWindow *window = (GLFWindow*)object;
+            Window *window = (Window*)object;
             window->setFrameBuffer(left,right);
         }
 
@@ -243,10 +243,10 @@ namespace ospray{
                     ServiceInfo serviceInfo;
                     serviceInfo.sendTo(wallInfo, host, clientNum);
                     std::cout << "service info socket " << serviceInfo.sock << std::endl;
-                    GLFWindow *masterWindow = nullptr;
+                    Window *masterWindow = nullptr;
                     vec2i Position(1000, 0);//default is (0, 0)
                     sprintf(title, "Control Window on the Master Node");
-                    masterWindow = new GLFWindow(windowSize, Position, title, doFullScreen, doStereo);
+                    masterWindow = new Window(windowSize, Position, title, doFullScreen, doStereo, serviceInfo.sock);
                     startWallServer(world, 
                                     displayGroup, 
                                     dispatchGroup, 
@@ -264,7 +264,7 @@ namespace ospray{
                 // this rank is used to receive tiles and send tiles to other ranks 
                 // no window here
                 }else if(world.rank >= process_pernode){
-                    GLFWindow *glfwWindow = nullptr;
+                    Window *glfwWindow = nullptr;
                     if(arrangement == WallConfig::Arrangement_yx){
                         // set window position by rank number and arrangement
                         // for arrangement yx
@@ -280,7 +280,7 @@ namespace ospray{
                     }
                     //std::cout << "Window positon = #" << world.rank << " x = " << windowPosition.x << " " << windowPosition.y << std::endl;
 
-                    glfwWindow = new GLFWindow(windowSize, windowPosition, title, doFullScreen, doStereo);
+                    glfwWindow = new Window(windowSize, windowPosition, title, doFullScreen, doStereo, 0);
                     startWallServer(world, 
                                     displayGroup, 
                                     dispatchGroup, 

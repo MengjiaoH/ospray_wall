@@ -28,12 +28,18 @@ namespace ospray {
 
     using std::endl;
     using std::cout;
+    vec2f prev_mouse(-1);
+    vec2f moveFrom(-1);
+    vec2f moveTo(-1);
+    float zoom = 0;
+    int camera_changed = 0;
 
-    GLFWindow::GLFWindow(const vec2i &size,
+    Window::Window(const vec2i &size,
                          const vec2i &position,
                          const std::string &title,
                          bool doFullScreen, 
-                         bool stereo)
+                         bool stereo,
+                         int sock)
       : size(size),
         position(position),
         title(title),
@@ -42,13 +48,14 @@ namespace ospray {
         stereo(stereo),
         receivedFrameID(-1),
         displayedFrameID(-1),
-        doFullScreen(doFullScreen)
+        doFullScreen(doFullScreen),
+        sock(sock)
     {
       create();
     }
 
 
-    void GLFWindow::create()
+    void Window::create()
     {
       glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
@@ -74,9 +81,10 @@ namespace ospray {
       }
 
       glfwMakeContextCurrent(this->handle);
+      // glfwSetCursorPosCallback(this ->handle, cursorPosCallback);
     }
 
-    void GLFWindow::setFrameBuffer(const uint32_t *leftEye, const uint32 *rightEye)
+    void Window::setFrameBuffer(const uint32_t *leftEye, const uint32 *rightEye)
     {
       {
         std::lock_guard<std::mutex> lock(this->mutex);
@@ -84,13 +92,10 @@ namespace ospray {
         this->rightEye = rightEye;
         receivedFrameID++;
         newFrameAvail.notify_one();
-        // vec2i img_size{512, 512};
-        // writePPM("test_left.ppm", &img_size, leftEye);
-        // std::cout << "Image saved to 'test_left.ppm'\n";
       }
     }
 
-    void GLFWindow::display() 
+    void Window::display() 
     {
       {
         std::unique_lock<std::mutex> lock(mutex);
@@ -101,15 +106,11 @@ namespace ospray {
 
         if (!gotNewFrame)
           return;
-        
-        // std::cout << "new frame " << std::endl;
-
         vec2i currentSize(0);
         glfwGetFramebufferSize(this->handle, &currentSize.x, &currentSize.y);
 
         glViewport(0, 0, currentSize.x, currentSize.y);
         glClear(GL_COLOR_BUFFER_BIT);
-
 
         if (!leftEye) {
           /* invalid ... */
@@ -119,9 +120,9 @@ namespace ospray {
           // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
           glDrawPixels(size.x, size.y, GL_RGBA, GL_UNSIGNED_BYTE, leftEye);
         }
-      
         glfwSwapBuffers(this->handle);
       }
+
       {
         std::lock_guard<std::mutex> lock(mutex);
         displayedFrameID++;
@@ -129,25 +130,99 @@ namespace ospray {
       }
     }
 
-    vec2i GLFWindow::getSize() const 
+    vec2i Window::getSize() const 
     { 
       return size; 
     }
 
-    bool GLFWindow::doesStereo() const
+    bool Window::doesStereo() const
     { 
       return stereo; 
     }
     
-    void GLFWindow::run() 
+    void Window::run() 
     { 
+      glfwSetCursorPosCallback(this ->handle, cursorPosCallback);
       while (!glfwWindowShouldClose(this->handle)) {
-        // double lastTime = getSysTime();
         glfwPollEvents();
         display();
-        // double thisTime = getSysTime();
+        // send camera change status
+        if(camera_changed == 1){
+          // send 1
+          int status = 1;
+          send(sock, &status, 4, 0);
+          // send camera moveFrom moveTo 
+          send(sock, &moveFrom, sizeof(vec2f), 0);
+          send(sock, &moveTo, sizeof(vec2f), 0);
+          camera_changed = 0;
+        }else if(camera_changed == 2){
+          // send 2
+          int status = 2;
+          send(sock, &status, 4, 0);
+          // send camera moveFrom moveTo 
+          send(sock, &zoom, sizeof(float), 0);
+          camera_changed = 0;
+        }else if(camera_changed == 3){
+          // send 3
+          int status = 3;
+          send(sock, &status, 4, 0);
+          // send camera moveFrom moveTo 
+          send(sock, &moveFrom, sizeof(vec2f), 0);
+          send(sock, &moveTo, sizeof(vec2f), 0);
+          camera_changed = 0;
+        }else{
+          // send 0
+          int status = 0;
+          int out = send(sock, &status, 4, 0);
+        }
       }
     }
+
+    void cursorPosCallback(GLFWwindow *window, double x, double y){
+      // WindowState *state = static_cast<WindowState*>(glfwGetWindowUserPointer(window));
+      // WindowState *state = new WindowState();
+        const vec2f mouse(x, y);
+        if (prev_mouse != vec2f(-1)) {
+          const bool leftDown =
+            glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+          const bool rightDown =
+            glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+          const bool middleDown =
+            glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
+          const vec2f prev = prev_mouse;
+          vec2i fbSize;
+          glfwGetFramebufferSize(window, &fbSize.x, &fbSize.y);
+
+          if (leftDown) {
+            const vec2f mouseFrom(clamp(prev.x * 2.f / fbSize.x - 1.f,  -1.f, 1.f),
+                                  clamp(1.f - 2.f * prev.y / fbSize.y, -1.f, 1.f));
+            const vec2f mouseTo  (clamp(mouse.x * 2.f / fbSize.x - 1.f,  -1.f, 1.f),
+                clamp(1.f - 2.f * mouse.y / fbSize.y, -1.f, 1.f));
+            // state->camera.rotate(mouseFrom, mouseTo);
+            camera_changed = 1;
+            moveFrom = mouseFrom;
+            moveTo = mouseTo;
+            // std::cout << "camera rotation = " << mouseFrom << " " << mouseTo << std::endl;
+          } else if (rightDown) {
+            // state->camera.zoom(mouse.y - prev.y);
+            camera_changed = 2;
+            zoom = mouse.y - prev.y;
+          } else if (middleDown) {
+            const vec2f mouseFrom(clamp(prev.x * 2.f / fbSize.x - 1.f,  -1.f, 1.f),
+                                  clamp(1.f - 2.f * prev.y / fbSize.y, -1.f, 1.f));
+            const vec2f mouseTo   (clamp(mouse.x * 2.f / fbSize.x - 1.f,  -1.f, 1.f),
+                clamp(1.f - 2.f * mouse.y / fbSize.y, -1.f, 1.f));
+            const vec2f mouseDelta = mouseTo - mouseFrom;
+            // state->camera.pan(mouseDelta);
+            camera_changed = 3;
+            moveFrom = mouseFrom;
+            moveTo = mouseTo;
+          }
+        }
+      prev_mouse = mouse;
+    }
+
+    
     
   } // ::ospray::dw
 } // ::ospray

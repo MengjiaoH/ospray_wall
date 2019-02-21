@@ -89,25 +89,19 @@ namespace ospray{
             stereo = wallInfo.stereo;
             canvas = wallInfo.totalPixelsInWall;
 
-              // triangle mesh data
-              float vertex[] = { -1.0f, -1.0f, 3.0f, 0.f,
-                                 -1.0f,  1.0f, 3.0f, 0.f,
-                                  1.0f, -1.0f, 3.0f, 0.f,
-                                  0.1f,  0.1f, 0.3f, 0.f };
-              float color[] =  { 0.9f, 0.5f, 0.5f, 1.0f,
-                                 0.8f, 0.8f, 0.8f, 1.0f,
-                                 0.8f, 0.8f, 0.8f, 1.0f,
-                                 0.5f, 0.9f, 0.5f, 1.0f };
-              int32_t index[] = { 0, 1, 2,
-                                  1, 2, 3 };
-
             float box = 5000;
             //float cam_pos[] = {box, box, 0};
-            float cam_pos[] = {100, 62, 200};
-            float cam_up[] = {0, 1, 0};
-            float cam_target[] = {152.0f, 62.0f, 62.f};
-            float cam_view[] = {cam_target[0]-cam_pos[0], cam_target[1] - cam_pos[1], cam_target[2] - cam_pos[2]};
+            // float cam_pos[] = {100, 62, 200};
+            // float cam_up[] = {0, 1, 0};
+            // float cam_target[] = {152.0f, 62.0f, 62.f};
+            // float cam_view[] = {cam_target[0]-cam_pos[0], cam_target[1] - cam_pos[1], cam_target[2] - cam_pos[2]};
             OSPGeometry geom;
+            box3f world_bounds;
+            const vec3f lower = {-box, -box, -box};
+            const vec3f upper = {box, box, box};
+            world_bounds.lower = lower; world_bounds.upper = upper; 
+            Arcball arc_camera(world_bounds);
+
             //canvas.x = 1024; canvas.y = 768;
             if (mode == 0){
                 // spheres
@@ -130,12 +124,14 @@ namespace ospray{
             OSPModel model = ospNewModel();
             ospAddGeometry(model, geom);
             ospCommit(model);  
-
+            float cam_pos[] = {arc_camera.eyePos().x, arc_camera.eyePos().y, arc_camera.eyePos().z};
+            float cam_up[] = {arc_camera.upDir().x, arc_camera.upDir().y, arc_camera.upDir().z};
+            float cam_dir[] = {arc_camera.lookDir().x, arc_camera.lookDir().y, arc_camera.lookDir().z};
             OSPCamera camera = ospNewCamera("perspective");
             ospSet1f(camera, "aspect", canvas.x / (float)canvas.y);
             ospSet3fv(camera, "pos", cam_pos);
             ospSet3fv(camera, "up", cam_up);
-            ospSet3fv(camera, "dir", cam_view);
+            ospSet3fv(camera, "dir", cam_dir);
             ospCommit(camera);
 
             // For distributed rendering we must use the MPI raycaster
@@ -205,6 +201,11 @@ namespace ospray{
             PlainTile image(wallInfo.pixelsPerDisplay);
             image.setRegion(wallInfo.pixelsPerDisplay);
 
+            int status = 0;
+            vec2f moveFrom(-1);
+            vec2f moveTo(-1);
+            float zoom = 0;
+
             //Render
             while(1){
                 frameID++;
@@ -223,12 +224,32 @@ namespace ospray{
                ospUnmapFrameBuffer(image.pixel, framebuffer);
 
                ospRenderFrame(pixelOP_framebuffer, renderer, OSP_FB_COLOR);
-            
-               cam_pos[1] += 1.0;
-               cam_view[1] = cam_target[1] - cam_pos[1];
-               ospSet3fv(camera, "pos", cam_pos);
-               ospSet3fv(camera, "dir", cam_view);
-               ospCommit(camera);
+               // receive camera status
+
+               int in = recv(serviceInfo.sock, &status, 4, 0);
+               if(status == 1){
+                   // read camera info
+                   recv(serviceInfo.sock, &moveFrom, sizeof(vec2f), 0);
+                   recv(serviceInfo.sock, &moveTo, sizeof(vec2f), 0);
+                   // calculate camera rotation
+                   arc_camera.rotate(moveFrom, moveTo);
+               }else if(status == 2){
+                   recv(serviceInfo.sock, &zoom, sizeof(float), 0);
+                    arc_camera.zoom(zoom);
+               }else if(status == 3){
+                    // read camera info
+                   recv(serviceInfo.sock, &moveFrom, sizeof(vec2f), 0);
+                   recv(serviceInfo.sock, &moveTo, sizeof(vec2f), 0);
+                   const vec2f mouseDelta = moveTo - moveFrom;
+                   arc_camera.pan(mouseDelta);
+               }
+                float cam_pos[] = {arc_camera.eyePos().x, arc_camera.eyePos().y, arc_camera.eyePos().z};
+                float cam_up[] = {arc_camera.upDir().x, arc_camera.upDir().y, arc_camera.upDir().z};
+                float cam_dir[] = {arc_camera.lookDir().x, arc_camera.lookDir().y, arc_camera.lookDir().z};
+                ospSet3fv(camera, "pos", cam_pos);
+                ospSet3fv(camera, "up", cam_up);
+                ospSet3fv(camera, "dir", cam_dir);
+                ospCommit(camera);
             }
 
             if(!renderTime.empty()){
