@@ -259,7 +259,7 @@ namespace ospray{
                                     clientNum,
                                     serviceInfo.sock);
                     assert(masterWindow);
-                    std::cout << "debug " << std::endl;
+                    // std::cout << "debug " << std::endl;
                     masterWindow ->run();
                 // this rank is used to receive tiles and send tiles to other ranks 
                 // no window here

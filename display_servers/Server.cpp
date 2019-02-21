@@ -38,9 +38,9 @@ namespace ospray{
         {
             // commThreadIsReady.lock();
             // canStartProcessing.lock();
-            // commThread = std::thread([this](){
+            commThread = std::thread([this](){
                     setupCommunication();
-            // });
+            });
 
             // commThreadIsReady.lock();
 
@@ -51,6 +51,7 @@ namespace ospray{
         }
 
         Server::~Server(){
+            commThread.join();
             // for(int i = 0; i < clientNum; i++){
             //     recvThread[i].join();
             // }
@@ -76,8 +77,18 @@ namespace ospray{
                         rankList.push_back(rank);
                         std::cout << " socket #" << sock << " rank #" << rank << std::endl;
                     }
-                    // runDispatcher();
-                    receiveImage();
+
+                    std::thread imageThread = std::thread([this](){
+                        receiveImage();
+                    });
+
+                    std::thread dispatchThread = std::thread([this](){
+                        runDispatcher();
+                    });
+
+                    imageThread.join();
+                    dispatchThread.join();
+
                 }else{
                     // =======================================================
                     // TILE RECEIVER
@@ -166,32 +177,41 @@ namespace ospray{
             void *decompressor = CompressedTile::createDecompressor();
             allocateImageFrameBuffer();
             
-            for(int i = 0; i < 3; i++){
+            while(1){
                 CompressedTile image;
                 int numBytes = 0;
                 int dataSize = recv(image_socket, &numBytes, sizeof(int), 0);
                 image.numBytes = numBytes;
                 image.data = new unsigned char[image.numBytes];
                 valread = recv(image_socket , image.data, image.numBytes, MSG_WAITALL);
-                std::cout << "receive " << numBytes << " bytes " << valread << std::endl;
+                // std::cout << "receive " << numBytes << " bytes " << valread << std::endl;
                 // decompression
                 const CompressedTileHeader *header = (const CompressedTileHeader *)image.data;
                 PlainTile plain(image.getRegion().size());
                 image.decode(decompressor,plain);
+
+                const vec2i size = plain.size();
                 if(plain.eye){
-                    image_recv_r = plain.pixel;
+                    for(int i = 0; i < size.x * size.y; i++){
+                        image_recv_r[i] = plain.pixel[i];
+                    }
                 }else{
-                    image_recv_l = plain.pixel;
+                    for(int i = 0; i < size.x * size.y; i++){
+                        image_recv_l[i] = plain.pixel[i];
+                    }           
                 }
+ 
                 displayCallback(image_recv_l,image_recv_r, objectForCallback);
-                // DEBUG
-                vec2i img_size{512, 512};
-                writePPM("test.ppm", &img_size, image_recv_l);
-                std::cout << "Image saved to 'test.ppm'\n";
+                // // DEBUG
+                // vec2i img_size{512, 512};
+                // writePPM("test.ppm", &img_size, image_recv_l);
+                // std::cout << "Image saved to 'test.ppm'\n";
 
                 std::swap(image_recv_l,image_disp_l);
                 std::swap(image_recv_r,image_disp_r);
             }
+
+            CompressedTile::freeDecompressor(decompressor);
         }
 
 

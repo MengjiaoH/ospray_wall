@@ -206,21 +206,20 @@ namespace ospray{
             image.setRegion(wallInfo.pixelsPerDisplay);
 
             //Render
-            while(frameID < 3){
+            while(1){
                 frameID++;
-                std::cout << "===================== Frame "  << frameID << " =================== " << "\n";
+                // std::cout << "===================== Frame "  << frameID << " =================== " << "\n";
             //    auto lastTime = std::chrono::high_resolution_clock::now();
                
                ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR);
-            //    uint32_t* fb  = (uint32_t*)ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);
                image.pixel = (uint32_t*)ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);
                encoded.encode(compressor, image);
-               std::cout << " done compress frame " << std::endl;
+            //    std::cout << " done compress frame " << std::endl;
                int compressedData = send(serviceInfo.sock, &encoded.numBytes, sizeof(int), MSG_MORE);
-               std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << compressedData << std::endl;
+            //    std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << compressedData << std::endl;
             //    //! Send compressed tile
                int out = send(serviceInfo.sock, encoded.data, encoded.numBytes, 0);
-               std::cout << "Send the compressed frame " << out << std::endl;
+            //    std::cout << "Send the compressed frame " << out << std::endl;
                ospUnmapFrameBuffer(image.pixel, framebuffer);
 
                ospRenderFrame(pixelOP_framebuffer, renderer, OSP_FB_COLOR);

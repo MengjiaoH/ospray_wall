@@ -142,14 +142,10 @@ namespace ospray {
     void GLFWindow::run() 
     { 
       while (!glfwWindowShouldClose(this->handle)) {
-        double lastTime = getSysTime();
+        // double lastTime = getSysTime();
         glfwPollEvents();
-        std::cout << "DEBUG " << std::endl;
         display();
-        double thisTime = getSysTime();
-        //std::cout << "Time of render one frame wall window " << 1.f / (thisTime - lastTime) << std::endl;
-
-        //        usleep(1000);
+        // double thisTime = getSysTime();
       }
     }
     
