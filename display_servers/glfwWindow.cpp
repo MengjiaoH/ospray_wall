@@ -92,6 +92,7 @@ namespace ospray {
         this->rightEye = rightEye;
         receivedFrameID++;
         newFrameAvail.notify_one();
+        // std::cout << "received frame id = " << receivedFrameID << std::endl;
       }
     }
 
@@ -147,6 +148,7 @@ namespace ospray {
         glfwPollEvents();
         display();
         // send camera change status
+        // std::cout << "camera changed " << camera_changed << std::endl;
         if(camera_changed == 1){
           // send 1
           int status = 1;
@@ -174,6 +176,7 @@ namespace ospray {
           // send 0
           int status = 0;
           int out = send(sock, &status, 4, 0);
+          camera_changed = 0;
         }
       }
     }

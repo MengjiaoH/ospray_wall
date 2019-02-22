@@ -211,52 +211,65 @@ namespace ospray{
                 frameID++;
                 // std::cout << "===================== Frame "  << frameID << " =================== " << "\n";
             //    auto lastTime = std::chrono::high_resolution_clock::now();
-               
+               ospRenderFrame(pixelOP_framebuffer, renderer, OSP_FB_COLOR);
                ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR);
                image.pixel = (uint32_t*)ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);
                encoded.encode(compressor, image);
-            //    std::cout << " done compress frame " << std::endl;
                int compressedData = send(serviceInfo.sock, &encoded.numBytes, sizeof(int), MSG_MORE);
-            //    std::cout << "Compressed data size = " << encoded.numBytes << " bytes and send " << compressedData << std::endl;
-            //    //! Send compressed tile
+               //! Send compressed tile
                int out = send(serviceInfo.sock, encoded.data, encoded.numBytes, 0);
-            //    std::cout << "Send the compressed frame " << out << std::endl;
                ospUnmapFrameBuffer(image.pixel, framebuffer);
-
-               ospRenderFrame(pixelOP_framebuffer, renderer, OSP_FB_COLOR);
+     
                // receive camera status
-
                int in = recv(serviceInfo.sock, &status, 4, 0);
                if(status == 1){
+                   ospFrameBufferClear(framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM | OSP_FB_VARIANCE);
                    // read camera info
                    recv(serviceInfo.sock, &moveFrom, sizeof(vec2f), 0);
                    recv(serviceInfo.sock, &moveTo, sizeof(vec2f), 0);
+                   float cam_pos[] = {arc_camera.eyePos().x, arc_camera.eyePos().y, arc_camera.eyePos().z};
+                   float cam_up[] = {arc_camera.upDir().x, arc_camera.upDir().y, arc_camera.upDir().z};
+                   float cam_dir[] = {arc_camera.lookDir().x, arc_camera.lookDir().y, arc_camera.lookDir().z};
+                   ospSet3fv(camera, "pos", cam_pos);
+                   ospSet3fv(camera, "up", cam_up);
+                   ospSet3fv(camera, "dir", cam_dir);
+                   ospCommit(camera);
                    // calculate camera rotation
                    arc_camera.rotate(moveFrom, moveTo);
                }else if(status == 2){
+                   ospFrameBufferClear(framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM | OSP_FB_VARIANCE);
                    recv(serviceInfo.sock, &zoom, sizeof(float), 0);
                     arc_camera.zoom(zoom);
+                    float cam_pos[] = {arc_camera.eyePos().x, arc_camera.eyePos().y, arc_camera.eyePos().z};
+                    float cam_up[] = {arc_camera.upDir().x, arc_camera.upDir().y, arc_camera.upDir().z};
+                    float cam_dir[] = {arc_camera.lookDir().x, arc_camera.lookDir().y, arc_camera.lookDir().z};
+                    ospSet3fv(camera, "pos", cam_pos);
+                    ospSet3fv(camera, "up", cam_up);
+                    ospSet3fv(camera, "dir", cam_dir);
+                    ospCommit(camera);
                }else if(status == 3){
+                   ospFrameBufferClear(framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM | OSP_FB_VARIANCE);
                     // read camera info
                    recv(serviceInfo.sock, &moveFrom, sizeof(vec2f), 0);
                    recv(serviceInfo.sock, &moveTo, sizeof(vec2f), 0);
                    const vec2f mouseDelta = moveTo - moveFrom;
                    arc_camera.pan(mouseDelta);
+                   float cam_pos[] = {arc_camera.eyePos().x, arc_camera.eyePos().y, arc_camera.eyePos().z};
+                    float cam_up[] = {arc_camera.upDir().x, arc_camera.upDir().y, arc_camera.upDir().z};
+                    float cam_dir[] = {arc_camera.lookDir().x, arc_camera.lookDir().y, arc_camera.lookDir().z};
+                    ospSet3fv(camera, "pos", cam_pos);
+                    ospSet3fv(camera, "up", cam_up);
+                    ospSet3fv(camera, "dir", cam_dir);
+                    ospCommit(camera);
                }
-                float cam_pos[] = {arc_camera.eyePos().x, arc_camera.eyePos().y, arc_camera.eyePos().z};
-                float cam_up[] = {arc_camera.upDir().x, arc_camera.upDir().y, arc_camera.upDir().z};
-                float cam_dir[] = {arc_camera.lookDir().x, arc_camera.lookDir().y, arc_camera.lookDir().z};
-                ospSet3fv(camera, "pos", cam_pos);
-                ospSet3fv(camera, "up", cam_up);
-                ospSet3fv(camera, "dir", cam_dir);
-                ospCommit(camera);
+
             }
 
-            if(!renderTime.empty()){
-                Stats renderStats(renderTime);
-                renderStats.time_suffix = "ms";
-                std::cout  << "Decompression time statistics:\n" << renderStats << "\n";
-            }
+            // if(!renderTime.empty()){
+            //     Stats renderStats(renderTime);
+            //     renderStats.time_suffix = "ms";
+            //     std::cout  << "Decompression time statistics:\n" << renderStats << "\n";
+            // }
 //    auto thisTime = std::chrono::high_resolution_clock::now();
             //    renderTime.push_back(std::chrono::duration_cast<Time>(thisTime - lastTime));
                //std::cout << "Frame Rate  = " << 1.f / (thisTime - lastTime) << std::endl;
@@ -273,7 +286,7 @@ namespace ospray{
             // }
 
             // Clean up all our objects
-            //ospFreeFrameBuffer(framebuffer);
+            ospFreeFrameBuffer(framebuffer);
             ospFreeFrameBuffer(pixelOP_framebuffer);
             ospRelease(renderer);
             ospRelease(camera);
