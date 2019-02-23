@@ -81,12 +81,14 @@ namespace ospray {
       }
 
       glfwMakeContextCurrent(this->handle);
+      glfwSetCursorPosCallback(this ->handle, cursorPosCallback);
       // glfwSetCursorPosCallback(this ->handle, cursorPosCallback);
     }
 
     void Window::setFrameBuffer(const uint32_t *leftEye, const uint32 *rightEye)
     {
       {
+        // std::cout << "received frame id = " << receivedFrameID << std::endl;
         std::lock_guard<std::mutex> lock(this->mutex);
         this->leftEye = leftEye;
         this->rightEye = rightEye;
@@ -99,14 +101,16 @@ namespace ospray {
     void Window::display() 
     {
       {
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        // std::cout << "Entering .. rank " << rank << " display frame id = " << displayedFrameID << std::endl;
         std::unique_lock<std::mutex> lock(mutex);
-        bool gotNewFrame 
-          = newFrameAvail.wait_for(lock,std::chrono::milliseconds(100),
-                                   [this](){return receivedFrameID > displayedFrameID; });
+        newFrameAvail.wait(lock, [this](){return receivedFrameID > displayedFrameID; });
         // glfwShowWindow(window);
 
-        if (!gotNewFrame)
-          return;
+        // std::cout << "Leaving .. rank " << rank << " display frame id = " << displayedFrameID << std::endl;
+        // if (!gotNewFrame)
+        //   return;
         vec2i currentSize(0);
         glfwGetFramebufferSize(this->handle, &currentSize.x, &currentSize.y);
 
@@ -143,40 +147,46 @@ namespace ospray {
     
     void Window::run() 
     { 
-      glfwSetCursorPosCallback(this ->handle, cursorPosCallback);
+      
       while (!glfwWindowShouldClose(this->handle)) {
         glfwPollEvents();
         display();
         // send camera change status
         // std::cout << "camera changed " << camera_changed << std::endl;
-        if(camera_changed == 1){
-          // send 1
-          int status = 1;
-          send(sock, &status, 4, 0);
-          // send camera moveFrom moveTo 
-          send(sock, &moveFrom, sizeof(vec2f), 0);
-          send(sock, &moveTo, sizeof(vec2f), 0);
-          camera_changed = 0;
-        }else if(camera_changed == 2){
-          // send 2
-          int status = 2;
-          send(sock, &status, 4, 0);
-          // send camera moveFrom moveTo 
-          send(sock, &zoom, sizeof(float), 0);
-          camera_changed = 0;
-        }else if(camera_changed == 3){
-          // send 3
-          int status = 3;
-          send(sock, &status, 4, 0);
-          // send camera moveFrom moveTo 
-          send(sock, &moveFrom, sizeof(vec2f), 0);
-          send(sock, &moveTo, sizeof(vec2f), 0);
-          camera_changed = 0;
-        }else{
-          // send 0
-          int status = 0;
-          int out = send(sock, &status, 4, 0);
-          camera_changed = 0;
+        
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        // std::cout << "rank = " << rank << " socket = " << sock << std::endl;
+        if(rank == 0){
+          if(camera_changed == 1){
+            // send 1
+            int status = 1;
+            send(sock, &status, 4, 0);
+            // send camera moveFrom moveTo 
+            send(sock, &moveFrom, sizeof(vec2f), 0);
+            send(sock, &moveTo, sizeof(vec2f), 0);
+            camera_changed = 0;
+          }else if(camera_changed == 2){
+            // send 2
+            int status = 2;
+            send(sock, &status, 4, 0);
+            // send camera moveFrom moveTo 
+            send(sock, &zoom, sizeof(float), 0);
+            camera_changed = 0;
+          }else if(camera_changed == 3){
+            // send 3
+            int status = 3;
+            send(sock, &status, 4, 0);
+            // send camera moveFrom moveTo 
+            send(sock, &moveFrom, sizeof(vec2f), 0);
+            send(sock, &moveTo, sizeof(vec2f), 0);
+            camera_changed = 0;
+          }else{
+            // send 0
+            int status = 0;
+            int out = send(sock, &status, 4, 0);
+            camera_changed = 0;
+          }
         }
       }
     }

@@ -55,8 +55,6 @@ namespace ospray {
                 {
                     // static std::atomic<int> tileID(0);
                     // int myTileID = tileID++;
-                    
-                    // receiveImage();
                     auto tile = std::make_shared<CompressedTile>();
                     // receive the data size of compressed tile
                     int numBytes = 0;
@@ -67,7 +65,7 @@ namespace ospray {
                     // std::cout << " data read " << dataSize << std::endl;
                     tile ->numBytes = numBytes;
                     tile ->data = new unsigned char[tile ->numBytes];
-                    valread = recv( sd , tile->data, tile ->numBytes, MSG_WAITALL);
+                    valread = recv(sd , tile->data, tile ->numBytes, MSG_WAITALL);
 
                     auto end = std::chrono::high_resolution_clock::now();
                     // std::cout << " tile ID = " << myTileID << " and num of bytes = " << valread << std::endl;

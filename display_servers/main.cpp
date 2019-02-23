@@ -244,7 +244,7 @@ namespace ospray{
                     serviceInfo.sendTo(wallInfo, host, clientNum);
                     std::cout << "service info socket " << serviceInfo.sock << std::endl;
                     Window *masterWindow = nullptr;
-                    vec2i Position(1000, 0);//default is (0, 0)
+                    vec2i Position(1300, 0);//default is (0, 0)
                     sprintf(title, "Control Window on the Master Node");
                     masterWindow = new Window(windowSize, Position, title, doFullScreen, doStereo, serviceInfo.sock);
                     startWallServer(world, 
@@ -280,7 +280,7 @@ namespace ospray{
                     }
                     //std::cout << "Window positon = #" << world.rank << " x = " << windowPosition.x << " " << windowPosition.y << std::endl;
 
-                    glfwWindow = new Window(windowSize, windowPosition, title, doFullScreen, doStereo, 0);
+                    glfwWindow = new Window(windowSize, windowPosition, title, doFullScreen, doStereo, -1);
                     startWallServer(world, 
                                     displayGroup, 
                                     dispatchGroup, 

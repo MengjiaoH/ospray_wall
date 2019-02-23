@@ -211,7 +211,11 @@ namespace ospray{
                 frameID++;
                 // std::cout << "===================== Frame "  << frameID << " =================== " << "\n";
             //    auto lastTime = std::chrono::high_resolution_clock::now();
+                ospSet1f(camera, "aspect", canvas.x / (float)canvas.y);
+               ospCommit(camera);
                ospRenderFrame(pixelOP_framebuffer, renderer, OSP_FB_COLOR);
+               ospSet1f(camera, "aspect", saved_img_size.x / (float)saved_img_size.y);
+               ospCommit(camera);
                ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR);
                image.pixel = (uint32_t*)ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);
                encoded.encode(compressor, image);
@@ -224,43 +228,37 @@ namespace ospray{
                int in = recv(serviceInfo.sock, &status, 4, 0);
                if(status == 1){
                    ospFrameBufferClear(framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM | OSP_FB_VARIANCE);
+                //    ospFrameBufferClear(pixelOP_framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM | OSP_FB_VARIANCE);
                    // read camera info
                    recv(serviceInfo.sock, &moveFrom, sizeof(vec2f), 0);
                    recv(serviceInfo.sock, &moveTo, sizeof(vec2f), 0);
-                   float cam_pos[] = {arc_camera.eyePos().x, arc_camera.eyePos().y, arc_camera.eyePos().z};
-                   float cam_up[] = {arc_camera.upDir().x, arc_camera.upDir().y, arc_camera.upDir().z};
-                   float cam_dir[] = {arc_camera.lookDir().x, arc_camera.lookDir().y, arc_camera.lookDir().z};
-                   ospSet3fv(camera, "pos", cam_pos);
-                   ospSet3fv(camera, "up", cam_up);
-                   ospSet3fv(camera, "dir", cam_dir);
+                    ospSet3f(camera, "pos", arc_camera.eyePos().x, arc_camera.eyePos().y, arc_camera.eyePos().z);
+                    ospSet3f(camera, "up", arc_camera.upDir().x, arc_camera.upDir().y, arc_camera.upDir().z);
+                    ospSet3f(camera, "dir", arc_camera.lookDir().x, arc_camera.lookDir().y, arc_camera.lookDir().z);
                    ospCommit(camera);
                    // calculate camera rotation
                    arc_camera.rotate(moveFrom, moveTo);
                }else if(status == 2){
                    ospFrameBufferClear(framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM | OSP_FB_VARIANCE);
+                //    ospFrameBufferClear(pixelOP_framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM | OSP_FB_VARIANCE);
                    recv(serviceInfo.sock, &zoom, sizeof(float), 0);
                     arc_camera.zoom(zoom);
-                    float cam_pos[] = {arc_camera.eyePos().x, arc_camera.eyePos().y, arc_camera.eyePos().z};
-                    float cam_up[] = {arc_camera.upDir().x, arc_camera.upDir().y, arc_camera.upDir().z};
-                    float cam_dir[] = {arc_camera.lookDir().x, arc_camera.lookDir().y, arc_camera.lookDir().z};
-                    ospSet3fv(camera, "pos", cam_pos);
-                    ospSet3fv(camera, "up", cam_up);
-                    ospSet3fv(camera, "dir", cam_dir);
+                    ospSet3f(camera, "pos", arc_camera.eyePos().x, arc_camera.eyePos().y, arc_camera.eyePos().z);
+                    ospSet3f(camera, "up", arc_camera.upDir().x, arc_camera.upDir().y, arc_camera.upDir().z);
+                    ospSet3f(camera, "dir", arc_camera.lookDir().x, arc_camera.lookDir().y, arc_camera.lookDir().z);
                     ospCommit(camera);
                }else if(status == 3){
                    ospFrameBufferClear(framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM | OSP_FB_VARIANCE);
+                //    ospFrameBufferClear(pixelOP_framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM | OSP_FB_VARIANCE);
                     // read camera info
                    recv(serviceInfo.sock, &moveFrom, sizeof(vec2f), 0);
                    recv(serviceInfo.sock, &moveTo, sizeof(vec2f), 0);
                    const vec2f mouseDelta = moveTo - moveFrom;
                    arc_camera.pan(mouseDelta);
-                   float cam_pos[] = {arc_camera.eyePos().x, arc_camera.eyePos().y, arc_camera.eyePos().z};
-                    float cam_up[] = {arc_camera.upDir().x, arc_camera.upDir().y, arc_camera.upDir().z};
-                    float cam_dir[] = {arc_camera.lookDir().x, arc_camera.lookDir().y, arc_camera.lookDir().z};
-                    ospSet3fv(camera, "pos", cam_pos);
-                    ospSet3fv(camera, "up", cam_up);
-                    ospSet3fv(camera, "dir", cam_dir);
-                    ospCommit(camera);
+                   ospSet3f(camera, "pos", arc_camera.eyePos().x, arc_camera.eyePos().y, arc_camera.eyePos().z);
+                   ospSet3f(camera, "up", arc_camera.upDir().x, arc_camera.upDir().y, arc_camera.upDir().z);
+                   ospSet3f(camera, "dir", arc_camera.lookDir().x, arc_camera.lookDir().y, arc_camera.lookDir().z);
+                   ospCommit(camera);
                }
 
             }
