@@ -22,17 +22,20 @@ namespace ospray{
             serv_addr.sin_family = AF_INET;
             serv_addr.sin_port = htons(portNo);
             serv_addr.sin_addr.s_addr = inet_addr(hostName.c_str());
-
             //Convert IPv4 and IPv6 addresses from text to binary form
             // "155.98.19.60" powerwall00
-            //  if(inet_pton(AF_INET, "155.98.19.60", &serv_addr.sin_addr)<=0) 
-            //  {
-            //      printf("\nInvalid address/ Address not supported \n");
-            //  }
-             if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) 
-             {
-                 printf("\nInvalid address/ Address not supported \n");
-             } 
+            hostent *record = gethostbyname(hostName.c_str());
+            if(record == NULL){
+		        printf("%s is unavailable\n", hostName);
+		        exit(1);
+	        }
+            in_addr * address = (in_addr * )record->h_addr;
+	        std::string ip_address = inet_ntoa(* address);
+            // std::cout << hostName << " (" << ip_address << ")\n";
+            if(inet_pton(AF_INET, ip_address.c_str(), &serv_addr.sin_addr)<=0) 
+            {
+                printf("\nInvalid address/ Address not supported \n");
+            } 
             if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
             {
                 printf("\nConnection Failed \n");

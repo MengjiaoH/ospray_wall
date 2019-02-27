@@ -90,26 +90,18 @@ namespace ospray{
             canvas = wallInfo.totalPixelsInWall;
 
             float box = 5000;
-            //float cam_pos[] = {box, box, 0};
-            // float cam_pos[] = {100, 62, 200};
-            // float cam_up[] = {0, 1, 0};
-            // float cam_target[] = {152.0f, 62.0f, 62.f};
-            // float cam_view[] = {cam_target[0]-cam_pos[0], cam_target[1] - cam_pos[1], cam_target[2] - cam_pos[2]};
             OSPGeometry geom;
             box3f world_bounds;
             const vec3f lower = {-box, -box, -box};
             const vec3f upper = {box, box, box};
             world_bounds.lower = lower; world_bounds.upper = upper; 
             Arcball arc_camera(world_bounds);
-
-            //canvas.x = 1024; canvas.y = 768;
             if (mode == 0){
                 // spheres
                 // construct particles
                 std::vector<Particle> random_atoms;
                 std::vector<float> random_colors;
                 constructParticles(random_atoms, random_colors, box);
-                
                 //new spheres geometry
                 geom = commitParticles(random_atoms, random_colors);  // create and setup model and mesh
             }else{
@@ -155,7 +147,6 @@ namespace ospray{
             std::vector<OSPLight> light_list {ambient_light, directional_light0} ;
             OSPData lights = ospNewData(light_list.size(), OSP_OBJECT, light_list.data());
             ospCommit(lights);
-
 
             //OSPLight light = ospNewLight(renderer, "ambient");
             //ospCommit(light);
@@ -210,70 +201,63 @@ namespace ospray{
             while(1){
                 frameID++;
                 // std::cout << "===================== Frame "  << frameID << " =================== " << "\n";
-            //    auto lastTime = std::chrono::high_resolution_clock::now();
                 ospSet1f(camera, "aspect", canvas.x / (float)canvas.y);
-               ospCommit(camera);
-               ospRenderFrame(pixelOP_framebuffer, renderer, OSP_FB_COLOR);
-               ospSet1f(camera, "aspect", saved_img_size.x / (float)saved_img_size.y);
-               ospCommit(camera);
-               ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR);
-               image.pixel = (uint32_t*)ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);
-               encoded.encode(compressor, image);
-               int compressedData = send(serviceInfo.sock, &encoded.numBytes, sizeof(int), MSG_MORE);
-               //! Send compressed tile
-               int out = send(serviceInfo.sock, encoded.data, encoded.numBytes, 0);
-               ospUnmapFrameBuffer(image.pixel, framebuffer);
+                ospCommit(camera);
+                ospRenderFrame(pixelOP_framebuffer, renderer, OSP_FB_COLOR);
+                ospSet1f(camera, "aspect", saved_img_size.x / (float)saved_img_size.y);
+                ospCommit(camera);
+                ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR);
+                image.pixel = (uint32_t*)ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);
+                encoded.encode(compressor, image);
+                int compressedData = send(serviceInfo.sock, &encoded.numBytes, sizeof(int), MSG_MORE);
+                //! Send compressed tile
+                int out = send(serviceInfo.sock, encoded.data, encoded.numBytes, 0);
+                ospUnmapFrameBuffer(image.pixel, framebuffer);
      
-               // receive camera status
-               int in = recv(serviceInfo.sock, &status, 4, 0);
-               if(status == 1){
-                   ospFrameBufferClear(framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM | OSP_FB_VARIANCE);
-                //    ospFrameBufferClear(pixelOP_framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM | OSP_FB_VARIANCE);
-                   // read camera info
-                   recv(serviceInfo.sock, &moveFrom, sizeof(vec2f), 0);
-                   recv(serviceInfo.sock, &moveTo, sizeof(vec2f), 0);
+                // receive camera status
+                int in = recv(serviceInfo.sock, &status, 4, 0);
+                if(status == 1){
+                    ospFrameBufferClear(framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM | OSP_FB_VARIANCE);
+                    // read camera info
+                    recv(serviceInfo.sock, &moveFrom, sizeof(vec2f), 0);
+                    recv(serviceInfo.sock, &moveTo, sizeof(vec2f), 0);
                     ospSet3f(camera, "pos", arc_camera.eyePos().x, arc_camera.eyePos().y, arc_camera.eyePos().z);
                     ospSet3f(camera, "up", arc_camera.upDir().x, arc_camera.upDir().y, arc_camera.upDir().z);
                     ospSet3f(camera, "dir", arc_camera.lookDir().x, arc_camera.lookDir().y, arc_camera.lookDir().z);
-                   ospCommit(camera);
-                   // calculate camera rotation
-                   arc_camera.rotate(moveFrom, moveTo);
-               }else if(status == 2){
-                   ospFrameBufferClear(framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM | OSP_FB_VARIANCE);
-                //    ospFrameBufferClear(pixelOP_framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM | OSP_FB_VARIANCE);
-                   recv(serviceInfo.sock, &zoom, sizeof(float), 0);
+                    ospCommit(camera);
+                    // calculate camera rotation
+                    arc_camera.rotate(moveFrom, moveTo);
+                }else if(status == 2){
+                    ospFrameBufferClear(framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM | OSP_FB_VARIANCE);
+                    recv(serviceInfo.sock, &zoom, sizeof(float), 0);
                     arc_camera.zoom(zoom);
                     ospSet3f(camera, "pos", arc_camera.eyePos().x, arc_camera.eyePos().y, arc_camera.eyePos().z);
                     ospSet3f(camera, "up", arc_camera.upDir().x, arc_camera.upDir().y, arc_camera.upDir().z);
                     ospSet3f(camera, "dir", arc_camera.lookDir().x, arc_camera.lookDir().y, arc_camera.lookDir().z);
                     ospCommit(camera);
-               }else if(status == 3){
-                   ospFrameBufferClear(framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM | OSP_FB_VARIANCE);
-                //    ospFrameBufferClear(pixelOP_framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM | OSP_FB_VARIANCE);
+                }else if(status == 3){
+                    ospFrameBufferClear(framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM | OSP_FB_VARIANCE);
                     // read camera info
-                   recv(serviceInfo.sock, &moveFrom, sizeof(vec2f), 0);
-                   recv(serviceInfo.sock, &moveTo, sizeof(vec2f), 0);
-                   const vec2f mouseDelta = moveTo - moveFrom;
-                   arc_camera.pan(mouseDelta);
-                   ospSet3f(camera, "pos", arc_camera.eyePos().x, arc_camera.eyePos().y, arc_camera.eyePos().z);
-                   ospSet3f(camera, "up", arc_camera.upDir().x, arc_camera.upDir().y, arc_camera.upDir().z);
-                   ospSet3f(camera, "dir", arc_camera.lookDir().x, arc_camera.lookDir().y, arc_camera.lookDir().z);
-                   ospCommit(camera);
-               }
-
+                    recv(serviceInfo.sock, &moveFrom, sizeof(vec2f), 0);
+                    recv(serviceInfo.sock, &moveTo, sizeof(vec2f), 0);
+                    const vec2f mouseDelta = moveTo - moveFrom;
+                    arc_camera.pan(mouseDelta);
+                    ospSet3f(camera, "pos", arc_camera.eyePos().x, arc_camera.eyePos().y, arc_camera.eyePos().z);
+                    ospSet3f(camera, "up", arc_camera.upDir().x, arc_camera.upDir().y, arc_camera.upDir().z);
+                    ospSet3f(camera, "dir", arc_camera.lookDir().x, arc_camera.lookDir().y, arc_camera.lookDir().z);
+                    ospCommit(camera);
+                }
             }
-
             // if(!renderTime.empty()){
             //     Stats renderStats(renderTime);
             //     renderStats.time_suffix = "ms";
             //     std::cout  << "Decompression time statistics:\n" << renderStats << "\n";
             // }
-//    auto thisTime = std::chrono::high_resolution_clock::now();
+            //    auto thisTime = std::chrono::high_resolution_clock::now();
             //    renderTime.push_back(std::chrono::duration_cast<Time>(thisTime - lastTime));
                //std::cout << "Frame Rate  = " << 1.f / (thisTime - lastTime) << std::endl;
                //double thisTime = getSysTime();
                //std::cout << "offload frame rate = " << 1.f / (thisTime - lastTime) << std::endl;
-
 
             // if(mpicommon::world.rank == 0){
             //     uint32_t* fb = (uint32_t*)ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);
@@ -290,7 +274,6 @@ namespace ospray{
             ospRelease(camera);
             ospRelease(model);
 	        return 0;
-
         }
     }
 }

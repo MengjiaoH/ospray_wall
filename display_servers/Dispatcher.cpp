@@ -61,7 +61,7 @@ namespace ospray {
                     auto start = std::chrono::high_resolution_clock::now();
 
                     int dataSize = recv(sd, &numBytes, sizeof(int), 0);
-                    //std::cout << "socket = " << sd << " Compressed tile would have " << numBytes << " bytes" << std::endl;
+                    std::cout << "socket = " << sd << " Compressed tile would have " << numBytes << " bytes" << std::endl;
                     // std::cout << " data read " << dataSize << std::endl;
                     tile ->numBytes = numBytes;
                     tile ->data = new unsigned char[tile ->numBytes];

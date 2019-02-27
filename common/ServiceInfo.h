@@ -4,6 +4,7 @@
 #include <thread>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
 #include "ospcommon/vec.h"
 #include "mpiCommon/MPICommon.h"
