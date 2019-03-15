@@ -43,7 +43,6 @@ namespace ospray{
                          " on port " << portNum << std::endl; 
             std::cout << std::endl;
             std::cout << "=============================" << std::endl;
-            std::cout << std::endl;
                 
             struct sockaddr_in serv_addr;
             // ~~ Socket Creation
@@ -56,18 +55,21 @@ namespace ospray{
   
             serv_addr.sin_family = AF_INET;
             serv_addr.sin_port = htons(portNum);
-            //serv_addr.sin_addr.s_addr = inet_addr(hostName.c_str());
-     
-            // TODO: connect use hostname instead of IP address  
-            // Convert IPv4 and IPv6 addresses from text to binary form
-            //  if(inet_pton(AF_INET, "155.98.19.60", &serv_addr.sin_addr)<=0) 
-            //  {
-            //      printf("\nInvalid address/ Address not supported \n");
-            //  }
-            if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) 
+            serv_addr.sin_addr.s_addr = inet_addr(hostName.c_str());
+            //Convert IPv4 and IPv6 addresses from text to binary form
+            // "155.98.19.60" powerwall00
+            hostent *record = gethostbyname(hostName.c_str());
+            if(record == NULL){
+		        printf("%s is unavailable\n", hostName);
+		        exit(1);
+	        }
+            in_addr * address = (in_addr * )record->h_addr;
+	        std::string ip_address = inet_ntoa(* address);
+            // std::cout << hostName << " (" << ip_address << ")\n";
+            if(inet_pton(AF_INET, ip_address.c_str(), &serv_addr.sin_addr)<=0) 
             {
                 printf("\nInvalid address/ Address not supported \n");
-            }
+            } 
 
             while(1){
                 int connection = connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
@@ -77,8 +79,6 @@ namespace ospray{
                     break;
                 }
             }
-
-            // std::cout << "sock " << sock << std::endl;
             me.barrier();
         }// end of establishConnection
 
@@ -130,8 +130,6 @@ namespace ospray{
         
         void Client::writeTile(const PlainTile &tile)
         {
-            //assert(wallConfig);
-            
             CompressedTile encoded;
             if (!g_compressor) g_compressor = CompressedTile::createCompressor();
             void *compressor = g_compressor;
@@ -140,9 +138,6 @@ namespace ospray{
             // auto end0 = std::chrono::high_resolution_clock::now();
             // compressiontimes.push_back(std::chrono::duration_cast<realTime>(end0 - start0));
 
-            // static std::atomic<int> ID;
-            // int myTileID = ID++;
-            //std::cout << "tile ID = " << ID << std::endl;
             // TODO: Measure compression ratio
             // TODO: Push all rendered tiles into a outbox and send them in a separate thread 
             // !! Send tile
@@ -163,21 +158,6 @@ namespace ospray{
                 // auto end = std::chrono::high_resolution_clock::now();
                 // sendtimes.push_back(std::chrono::duration_cast<realTime>(end - start));
             }
-            // {
-            //     std::lock_guard<std::mutex> lock(addMutex);
-            //     box2i region = encoded.getRegion();
-            //     numWrittenThisClient[me.rank] += region.size().product();
-            //     if(numWrittenThisClient[me.rank] == numPixelsPerClient[me.rank]){
-            //         // Client has sent all tiles
-            //         numWrittenThisClient[me.rank] = 0;
-            //         realTime sum_send;
-            //         for(size_t i = 0; i < sendtimes.size(); i++){
-            //             sum_send += sendtimes[i];
-            //         }
-            //         sendTime.push_back(std::chrono::duration_cast<realTime>(sum_send));
-            //         sendtimes.clear();
-            //     }
-            // }
             // ## Debug 
             // CompressedTileHeader *header = (CompressedTileHeader *)encoded.data;
 
@@ -188,7 +168,6 @@ namespace ospray{
             // ospcommon::vec2i img_size(256, 256);
             // writePPM(filename.c_str(), &img_size, (uint32_t*)header -> payload);
             // Correct !
-
         }// end of writeTile
 
     }// ospray::dw

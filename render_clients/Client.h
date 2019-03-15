@@ -5,6 +5,7 @@
 #include <memory>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 //common libs
 #include "../common/WallConfig.h"
 #include "../common/helper.h"
