@@ -36,11 +36,7 @@ IF (OSPRAY_MODULE_WALL)
   LIST(APPEND LIBS)
   MESSAGE(STATUS "LIBS ${LIBS}")
 
-  ADD_SUBDIRECTORY(common)
-  ADD_SUBDIRECTORY(display_servers)
-  ADD_SUBDIRECTORY(render_clients)
-  ADD_SUBDIRECTORY(tests)
-  # the ospray pixelop one can use to get a ospray frame buffer to the
+    # the ospray pixelop one can use to get a ospray frame buffer to the
   # display wall
   ADD_SUBDIRECTORY(ospray)
 

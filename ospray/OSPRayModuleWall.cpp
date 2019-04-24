@@ -26,9 +26,7 @@ SOFTWARE.
 #include "ospray/common/Data.h"
 #include "mpiCommon/MPICommon.h"
 // displaywald client
-#include "../render_clients/Client.h"
-#include "../common/WallConfig.h"
-#include "../common/helper.h"
+#include "dwClient.h"
 
 #include <atomic>
 #include <thread>
@@ -45,9 +43,8 @@ namespace ospray {
       struct Instance : public ospray::PixelOp::Instance 
       {
         Instance(FrameBuffer *fb, 
-                 PixelOp::Instance *prev,
-                 dw::Client *client)
-          : client(client), framebuffer(fb)
+                 PixelOp::Instance *prev)
+          : framebuffer(fb)
         {
           fb ->pixelOp = this;
           fb ->frameID = 0; 
@@ -73,7 +70,8 @@ namespace ospray {
             //std::cout << "frame id = " << framebuffer ->frameID << std::endl;
         }
         virtual void endFrame() 
-        { client->endFrame(); }
+        { //client->endFrame(); 
+	}
         
         unsigned int clampColorComponent(float c)
         {
@@ -105,7 +103,7 @@ namespace ospray {
             
             //std::cout << " postAccum " << std::endl;
             //std::cout << client -> getWallConfig() -> numDisplays.x << " x " << client -> getWallConfig() -> numDisplays.y << std::endl;
-            
+          /*  
           PlainTile plainTile(vec2i(TILE_SIZE));
           plainTile.pitch = TILE_SIZE;
           for (int i=0;i<TILE_SIZE*TILE_SIZE;i++) {
@@ -171,15 +169,14 @@ namespace ospray {
               client->writeTile(plainTile);
             }    
           }
+*/
         }
  
         //! \brief common function to help printf-debugging 
         /*! Every derived class should overrride this! */
         virtual std::string toString() const;
 
-        dw::Client *client;
         FrameBuffer *framebuffer;
-        //std::thread sendThread;
       };
       
       //! \brief common function to help printf-debugging 
@@ -190,6 +187,7 @@ namespace ospray {
        *         parameters etc) */
       virtual void commit()
       {
+/*
         int portNum = getParam1i("portNum", 0);
         //int remote_mode = getParam1i("remote", 0);
         std::string hostName = getParamString("hostName","");
@@ -199,15 +197,15 @@ namespace ospray {
         //PING;
         //PRINT(mpicommon::worker.size);
         client = new dw::Client(hostName, portNum, mpicommon::worker, wallInfo);
-      }
+      */
+	}
 
       //! \brief create an instance of this pixel op
       virtual ospray::PixelOp::Instance *createInstance(FrameBuffer *fb, 
                                                         PixelOp::Instance *prev) override
       {
-        return new Instance(fb, prev, client);
+        return new Instance(fb, prev);
       }
-      dw::Client *client; 
     };
     
     //! \brief common function to help printf-debugging 
