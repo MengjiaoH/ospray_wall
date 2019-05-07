@@ -26,7 +26,8 @@ SOFTWARE.
 #include "ospray/common/Data.h"
 #include "mpiCommon/MPICommon.h"
 // displaywald client
-#include "dwClient.h"
+#include "dw2_client.h"
+#include "CompressedTile.h"
 
 #include <atomic>
 #include <thread>
@@ -48,30 +49,17 @@ namespace ospray {
         {
           fb ->pixelOp = this;
           fb ->frameID = 0; 
-          //sendThread = std::thread([&](){
-                  ////std::lock_guard<std::mutex> lock(sendMutex);
-                  //client -> sendTile();
-          //});
-          
-        }
-
-       //~Instance(){
-           ////std::lock_guard<std::mutex> lock(state_mutex);
-           //client -> quit_state = true;
-           //sendThread.join();
-           ////mpicommon::world.barrier();
-       //} 
-
-        // /*! gets called every time the frame buffer got 'commit'ted */
-        // virtual void  commitNotify() {}
+         }
         // /*! gets called once at the end of the frame */
         virtual void beginFrame()
         {
-            //std::cout << "frame id = " << framebuffer ->frameID << std::endl;
+            std::cout << "frame id = " << framebuffer ->frameID << std::endl;
+            dw2_begin_frame();
         }
         virtual void endFrame() 
-        { //client->endFrame(); 
-	}
+        { 
+            dw2_end_frame(); 
+	      }
         
         unsigned int clampColorComponent(float c)
         {
@@ -99,41 +87,34 @@ namespace ospray {
           defines how these pixels are being processed before written
           into the color buffer */
         virtual void postAccum(Tile &tile) 
-        {
-            
-            //std::cout << " postAccum " << std::endl;
-            //std::cout << client -> getWallConfig() -> numDisplays.x << " x " << client -> getWallConfig() -> numDisplays.y << std::endl;
-          /*  
-          PlainTile plainTile(vec2i(TILE_SIZE));
-          plainTile.pitch = TILE_SIZE;
-          for (int i=0;i<TILE_SIZE*TILE_SIZE;i++) {
+        { 
+          box2i region = tile.region;
+		      dw2::PlainTile::SP plain_tile = std::make_shared<dw2::PlainTile>();
+          plain_tile->alloc(dw2::box2i(dw2::vec2i(region.lower.x, region.lower.y), 
+                                  dw2::vec2i(region.lower.x + TILE_SIZE, region.lower.y + TILE_SIZE)), 0);
+          plain_tile ->pitch = TILE_SIZE;
+
+          for (int i=0; i<TILE_SIZE*TILE_SIZE; i++) {
             float gamma = 2.2;
             unsigned int r = clampColorComponent(simpleGammaCorrection(tile.r[i], gamma));
             unsigned int g = clampColorComponent(simpleGammaCorrection(tile.g[i], gamma));
             unsigned int b = clampColorComponent(simpleGammaCorrection(tile.b[i], gamma));
 
             unsigned int rgba = packColor(r,g,b);// (b<<24)|(g<<16)|(r<<8);
-            plainTile.pixel[i] = rgba;
+            plain_tile ->pixels[i] = rgba;
           }
-          plainTile.region = tile.region;
-          bool stereo = client->getWallConfig()->doStereo();
-          {
-              //## Debug : write tiles to images
-              //std::cout << "write tiles to images before client write tiles" << std::endl;
-              //std::string filename = "before_client_write" + std::to_string(mpicommon::world.rank) + "_" +
-                                                            //std::to_string(tile.region.lower.x) + "_" +
-                                                            //std::to_string(tile.region.upper.x) + "_" +   
-                                                            //std::to_string(tile.region.lower.y) + "_" +  
-                                                            //std::to_string(tile.region.upper.y) + ".ppm";   
-              //vec2i img_size; img_size.x = TILE_SIZE; img_size.y = TILE_SIZE;
-              //writePPM(filename.c_str(), &img_size, plainTile.pixel);
-              //Correct!
-          }
-          
+          plain_tile ->region = dw2::box2i(dw2::vec2i(tile.region.lower.x, tile.region.lower.y),
+                                          dw2::vec2i(tile.region.upper.x, tile.region.upper.y));
+          std::cout << "Debug in postAccum:: Tile Region : lower (" << tile.region.lower.x << "," 
+                                                                    << tile.region.lower.y << ") upper ("
+                                                                    << tile.region.upper.x << ","
+                                                                    << tile.region.upper.y << ")\n";
+          plain_tile ->frameID = framebuffer ->frameID;
+          dw2_send_rgba(tile.region.lower.x, tile.region.lower.y, TILE_SIZE, TILE_SIZE, TILE_SIZE, plain_tile ->pixels.data());
+
+	/*
           if (!stereo) {
-            plainTile.eye = 0;
-            plainTile.frameID = framebuffer ->frameID;
-            client->writeTile(plainTile);
+
           } else {
             int trueScreenWidth = client->getWallConfig()->totalPixels().x;
             if (plainTile.region.upper.x <= trueScreenWidth) {
@@ -187,18 +168,15 @@ namespace ospray {
        *         parameters etc) */
       virtual void commit()
       {
-/*
-        int portNum = getParam1i("portNum", 0);
-        //int remote_mode = getParam1i("remote", 0);
+        int port = getParam1i("port", 0);
         std::string hostName = getParamString("hostName","");
         Ref<Data> wallInfoData = getParamData("wallInfo", nullptr);
-        const WallInfo *wallInfo = (const WallInfo *)wallInfoData ->data;
-        std::cout << "#osp:dw: trying to establish connection to display wall service at host " << hostName << " port " << portNum << std::endl;
-        //PING;
-        //PRINT(mpicommon::worker.size);
-        client = new dw::Client(hostName, portNum, mpicommon::worker, wallInfo);
-      */
-	}
+        const dw2_info_t *wallInfo = (const dw2_info_t *)wallInfoData ->data;
+        std::cout << "#osp:dw: trying to establish connection to display wall service at host " 
+                  << hostName << " port " << port << std::endl;
+        dw2_connect(hostName.c_str(), port, mpicommon::worker.size);
+        // client = new dw::Client(hostName, portNum, mpicommon::worker, wallInfo);
+	    }
 
       //! \brief create an instance of this pixel op
       virtual ospray::PixelOp::Instance *createInstance(FrameBuffer *fb, 
