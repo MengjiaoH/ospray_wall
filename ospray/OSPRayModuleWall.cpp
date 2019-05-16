@@ -105,10 +105,12 @@ namespace ospray {
           }
           plain_tile ->region = dw2::box2i(dw2::vec2i(tile.region.lower.x, tile.region.lower.y),
                                           dw2::vec2i(tile.region.upper.x, tile.region.upper.y));
+#if 0
           std::cout << "Debug in postAccum:: Tile Region : lower (" << tile.region.lower.x << "," 
                                                                     << tile.region.lower.y << ") upper ("
                                                                     << tile.region.upper.x << ","
                                                                     << tile.region.upper.y << ")\n";
+#endif
           plain_tile ->frameID = framebuffer ->frameID;
           dw2_send_rgba(tile.region.lower.x, tile.region.lower.y, TILE_SIZE, TILE_SIZE, TILE_SIZE, plain_tile ->pixels.data());
 
