@@ -14,16 +14,14 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-  find_package(dw2_common REQUIRED)
-  find_package(dw2_client REQUIRED)
+find_package(dw2_common REQUIRED)
+find_package(dw2_client REQUIRED)
 
-  OSPRAY_CREATE_LIBRARY(ospray_module_wall SHARED
-    OSPRayModuleWall.cpp
-    )
+OSPRAY_CREATE_LIBRARY(ospray_module_wall
+  OSPRayModuleWall.cpp
+LINK
+  dw2_client::dw2_client
+  ospray
+  ospray_module_mpi
+)
 
-  TARGET_LINK_LIBRARIES(ospray_module_wall
-    dw2_common::dw2_common
-    dw2_client::dw2_client
-    ospray
-    ospray_module_mpi
-  )

@@ -53,7 +53,6 @@ namespace ospray {
         // /*! gets called once at the end of the frame */
         virtual void beginFrame()
         {
-            std::cout << "frame id = " << framebuffer ->frameID << std::endl;
             dw2_begin_frame();
         }
         virtual void endFrame() 
@@ -172,12 +171,13 @@ namespace ospray {
       {
         int port = getParam1i("port", 0);
         std::string hostName = getParamString("hostName","");
+        int peers = getParam1i("peers", mpicommon::worker.size);
+
         Ref<Data> wallInfoData = getParamData("wallInfo", nullptr);
         const dw2_info_t *wallInfo = (const dw2_info_t *)wallInfoData ->data;
         std::cout << "#osp:dw: trying to establish connection to display wall service at host " 
                   << hostName << " port " << port << std::endl;
-        dw2_connect(hostName.c_str(), port, mpicommon::worker.size);
-        // client = new dw::Client(hostName, portNum, mpicommon::worker, wallInfo);
+        dw2_connect(hostName.c_str(), port, peers);
 	    }
 
       //! \brief create an instance of this pixel op
