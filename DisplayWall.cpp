@@ -73,10 +73,10 @@ void LiveDisplayWallOp::process(Tile &t)
   // Convert the tile to sRGBA8 and send it to the display wall
   std::vector<uint32_t> rgba8Tile(TILE_SIZE * TILE_SIZE, 0);
   for (size_t i = 0; i < rgba8Tile.size(); ++i) {
-    const uint8_t r = math::clamp(linearToSRGB(t.r[i]), 0.f, 255.f);
-    const uint8_t g = math::clamp(linearToSRGB(t.g[i]), 0.f, 255.f);
-    const uint8_t b = math::clamp(linearToSRGB(t.b[i]), 0.f, 255.f);
-    const uint8_t a = math::clamp(t.a[i], 0.f, 255.f);
+    const uint32_t r = math::clamp(linearToSRGB(t.r[i]) * 255.f, 0.f, 255.f);
+    const uint32_t g = math::clamp(linearToSRGB(t.g[i]) * 255.f, 0.f, 255.f);
+    const uint32_t b = math::clamp(linearToSRGB(t.b[i]) * 255.f, 0.f, 255.f);
+    const uint32_t a = math::clamp(t.a[i] * 255.f, 0.f, 255.f);
 
     rgba8Tile[i] = r | (g << 8) | (b << 16) | (a << 24);
   }
@@ -90,7 +90,7 @@ void LiveDisplayWallOp::process(Tile &t)
 } // namespace dw2
 } // namespace ospray
 
-extern "C" OSPError OSPRAY_DLLEXPORT ospray_module_init_denoiser(
+extern "C" OSPError OSPRAY_DLLEXPORT ospray_module_init_wall(
     int16_t versionMajor, int16_t versionMinor, int16_t /*versionPatch*/)
 {
   auto status = ospray::moduleVersionCheck(versionMajor, versionMinor);
